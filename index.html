@@ -41,7 +41,7 @@
       ko: "방문자",
       de: "Besucher",
       zh: "访客",
-      "zh-Hant": "訪客",
+      "zh-hant": "訪客",
       am: "ጎብኝዎ",
       he: "מבקר",
       sw: "Mgeni",
@@ -49,20 +49,26 @@
       pt: "Visitante",
       es: "Visitante",
       hi: "आगंतुक",
-      uk: "Відвідувач"
+      uk: "Відвідувач",
+      la: "Visitator"
     };
 
     const overrideName = null;
     const lang = (navigator.language || "en").toLowerCase();
     const short = lang.split("-")[0];
+    const fallbackName = overrideName || translations[lang] || translations[short] || "Visitor";
 
-    const name = overrideName ||
-      translations[lang] ||
-      translations[short] ||
-      "Visitor";
-
-    document.getElementById("welcome").textContent =
-      `ようこそおいでくださいました、${name}様`;
+    fetch("https://ipinfo.io/json")
+      .then(res => res.json())
+      .then(data => {
+        const nameToShow = data.ip || fallbackName;
+        document.getElementById("welcome").textContent =
+          `ようこそおいでくださいました、${nameToShow}様`;
+      })
+      .catch(() => {
+        document.getElementById("welcome").textContent =
+          `ようこそおいでくださいました、${fallbackName}様`;
+      });
   </script>
 </body>
 </html>
