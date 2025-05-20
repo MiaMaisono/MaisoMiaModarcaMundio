@@ -26,16 +26,43 @@
 <body>
   <div class="wrapper">
     <div>いらっしゃいませ。</div>
-    <div>ようこそおいでくださいました <span id="visitor">"Visitor"</span> 様</div>
+    <div id="welcome">ようこそおいでくださいました、Visitor様</div>
     <div>ご来店ありがとうございます。</div>
     <div>お待ちしておりました。</div>
   </div>
   <script>
-    fetch("https://ipinfo.io/json")
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById("visitor").textContent = data.ip || "お客様";
-      });
+    const translations = {
+      ja: "ヴィジター",
+      en: "Visitor",
+      ar: "زائر",
+      fr: "Visiteur",
+      eo: "Vizitanto",
+      it: "Visitatore",
+      ko: "방문자",
+      de: "Besucher",
+      zh: "访客",
+      "zh-Hant": "訪客",
+      am: "ጎብኝዎ",
+      he: "מבקר",
+      sw: "Mgeni",
+      ru: "Гость",
+      pt: "Visitante",
+      es: "Visitante",
+      hi: "आगंतुक",
+      uk: "Відвідувач"
+    };
+
+    const overrideName = null;
+    const lang = (navigator.language || "en").toLowerCase();
+    const short = lang.split("-")[0];
+
+    const name = overrideName ||
+      translations[lang] ||
+      translations[short] ||
+      "Visitor";
+
+    document.getElementById("welcome").textContent =
+      `ようこそおいでくださいました、${name}様`;
   </script>
 </body>
 </html>
