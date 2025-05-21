@@ -30,6 +30,7 @@
     <div>ご来店ありがとうございます。</div>
     <div>お待ちしておりました。</div>
   </div>
+
   <script>
     const overrideName = null; // 例: "MiaMaisono"
 
@@ -59,24 +60,29 @@
     const short = lang.split("-")[0];
     const fallbackName = translations[lang] || translations[short] || "Visitor";
 
+    function goToNext() {
+      setTimeout(() => {
+        window.location.href = "entrance.html";
+      }, 2000);
+    }
+
     if (overrideName) {
       document.getElementById("welcome").textContent =
         `ようこそおいでくださいました、${overrideName}様`;
+      goToNext();
     } else {
       fetch("https://ipinfo.io/json")
         .then(res => res.json())
         .then(data => {
-          if (data.ip) {
-            document.getElementById("welcome").textContent =
-              `ようこそおいでくださいました、${data.ip}様`;
-          } else {
-            document.getElementById("welcome").textContent =
-              `ようこそおいでくださいました、${fallbackName}様`;
-          }
+          const nameToShow = data.ip || fallbackName;
+          document.getElementById("welcome").textContent =
+            `ようこそおいでくださいました、${nameToShow}様`;
+          goToNext();
         })
         .catch(() => {
           document.getElementById("welcome").textContent =
             `ようこそおいでくださいました、${fallbackName}様`;
+          goToNext();
         });
     }
   </script>
