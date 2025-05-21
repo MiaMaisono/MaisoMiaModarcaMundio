@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>miapolvo | Entrance</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      color: #fff;
+      font-family: system-ui, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .choice {
+      display: flex;
+      gap: 3rem;
+    }
+    .choice a {
+      font-size: 4rem;
+      color: #fff;
+      text-decoration: none;
+      border: 2px solid #fff;
+      border-radius: 61.80339%;
+      width: 4rem;
+      height: 4rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: all 0.6180339s ease;
+    }
+    .choice a:hover {
+      background: #fff;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <div class="choice">
+    <a href="virtuale.html" title="Virtuale Mode">𝐕</a>
+    <a href="materiale.html" title="Materiale Vêtements">ϻ</a>
+  </div>
+</body>
+</html>
