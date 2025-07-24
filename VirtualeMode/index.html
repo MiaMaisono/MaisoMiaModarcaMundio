@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Virtuale Mode</title>
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #000;
+        color: #fff;
+        font-family: "Times New Roman", serif;
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .grid {
+        display: grid;
+        grid-template-rows: repeat(8, 1fr);
+        width: 80vmin;
+        height: 80vmin;
+        gap: 0.5vmin;
+      }
+      .grid a {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 4vmin;
+        color: #fff;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="grid">
+      <a href="https://example.com/M" title="M">M</a>
+      <a href="https://example.com/I" title="I">I</a>
+      <a href="https://example.com/A" title="A">A</a>
+      <a href="https://example.com/P" title="P">P</a>
+      <a href="https://example.com/O" title="O">O</a>
+      <a href="https://example.com/L" title="L">L</a>
+      <a href="https://example.com/V" title="V">V</a>
+      <a href="https://example.com/O2" title="O">O</a>
+    </div>
+  </body>
+</html>
