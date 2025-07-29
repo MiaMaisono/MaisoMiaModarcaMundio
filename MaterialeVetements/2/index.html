@@ -1,32 +1,55 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Materiale Vêtements</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EC | Materiale Vêtements</title>
   <style>
     body {
       margin: 0;
-      padding: 0;
-      background-color: #000;
+      background: #000;
       color: #fff;
-      font-family: "Times New Roman", serif; /* ← フォント変更ここ */
+      font-family: "Times New Roman", serif;
+      height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      text-align: center;
-      height: 100vh;
-      flex-direction: column;
     }
-    a {
+
+    .vertical-links {
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .vertical-links a {
       color: #fff;
-      text-decoration: underline;
-      margin-top: 1rem;
+      text-decoration: none;
+      font-size: 2rem;
+    }
+
+    .vertical-links a:hover {
+      color: #aaa;
     }
   </style>
 </head>
 <body>
-  <h1>ここに後で文章を入れます</h1>
-  <a href="https://example.com">リンクを後から追加</a>
+  <div class="vertical-links">
+    <a href="https://example.com/i">い</a>
+    <a href="https://example.com/ro">ろ</a>
+    <a href="https://example.com/ha">は</a>
+    <a href="https://example.com/ni">に</a>
+    <a href="https://example.com/ho">ほ</a>
+    <a href="https://example.com/he">へ</a>
+    <a href="https://example.com/to">と</a>
+    <a href="https://example.com/chi">ち</a>
+    <a href="https://example.com/ri">り</a>
+    <a href="https://example.com/nu">ぬ</a>
+    <a href="https://example.com/ru">る</a>
+    <a href="https://example.com/wo">を</a>
+  </div>
 </body>
 </html>
