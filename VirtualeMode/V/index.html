@@ -11,35 +11,42 @@
       height: 100vh;
       width: 100vw;
       font-family: Georgia, serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
-    .centered-link {
-      color: #FFF;
-      font-size: 28px;
+    .link-container {
       text-align: center;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      text-decoration: none;
-      line-height: 1.0;
+      color: #FFF;
+    }
+
+    .url-text {
+      font-size: 28px;
+      margin-bottom: -12px; /* ←ここをマイナスにして物理的に近づけます */
     }
 
     .highlight {
       font-size: 144px;
-      display: block;
-      margin-top: 0.618em;
+      line-height: 1;
     }
 
-    .centered-link:hover {
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    a:hover {
       text-decoration: underline;
     }
   </style>
 </head>
 <body>
-  <a class="centered-link" href="https://opensea.io/collection/miapolvo" target="_blank">
-    https://opensea.io/collection/
-    <span class="highlight">ϻiapolvo</span>
+  <a href="https://opensea.io/collection/miapolvo" target="_blank">
+    <div class="link-container">
+      <div class="url-text">https://opensea.io/collection/</div>
+      <div class="highlight">ϻiapol𝐯o</div>
+    </div>
   </a>
 </body>
 </html>
