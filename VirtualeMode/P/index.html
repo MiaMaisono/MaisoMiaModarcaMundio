@@ -33,31 +33,36 @@
       { href: "9/9.html" }
     ];
 
-    // シャッフル
-    for (let i = targets.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [targets[i], targets[j]] = [targets[j], targets[i]];
+    const positions = [
+      { top: "10%", left: "15%" },
+      { top: "25%", left: "70%" },
+      { top: "45%", left: "40%" },
+      { top: "60%", left: "65%" },
+      { top: "75%", left: "20%" },
+      { top: "88%", left: "80%" }
+    ];
+
+    // シャッフル関数
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
     }
 
-    // ランダム位置生成関数（画面内に収まるよう制限）
-    function getRandomPosition() {
-      return {
-        top: Math.floor(Math.random() * 80) + 5 + '%',    // 5%〜85%
-        left: Math.floor(Math.random() * 80) + 5 + '%'
-      };
-    }
+    const shuffledTargets = shuffle([...targets]);
+    const shuffledPositions = shuffle([...positions]);
 
-    // DOMに追加
-    targets.forEach(target => {
+    for (let i = 0; i < 6; i++) {
       const a = document.createElement("a");
-      const pos = getRandomPosition();
-      a.href = target.href;
+      a.href = shuffledTargets[i].href;
       a.className = "square";
-      a.style.top = pos.top;
-      a.style.left = pos.left;
+      a.style.top = shuffledPositions[i].top;
+      a.style.left = shuffledPositions[i].left;
       a.textContent = "□";
       document.body.appendChild(a);
-    });
+    }
   </script>
 </body>
 </html>
