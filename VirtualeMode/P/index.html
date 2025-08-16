@@ -12,7 +12,7 @@
     }
     .square {
       position: absolute;
-      font-size: 29.6px; /* 黄金比縮小済 */
+      font-size: 29.6px;
       color: white;
       text-decoration: none;
       transition: transform 0.2s ease;
@@ -25,21 +25,14 @@
 <body>
   <script>
     const targets = [
-      { href: "/p/P.html" },
-      { href: "/q/Q.html" },
-      { href: "/b/B.html" },
-      { href: "/d/D.html" },
-      { href: "/6/6.html" },
-      { href: "/9/9.html" }
+      { href: "p/P.html" },
+      { href: "q/Q.html" },
+      { href: "b/B.html" },
+      { href: "d/D.html" },
+      { href: "6/6.html" },
+      { href: "9/9.html" }
     ];
 
-    // シャッフル
-    for (let i = targets.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [targets[i], targets[j]] = [targets[j], targets[i]];
-    }
-
-    // 配置候補（重なりにくいランダム範囲）
     const positions = [
       { top: "10%", left: "15%" },
       { top: "25%", left: "70%" },
@@ -49,7 +42,13 @@
       { top: "88%", left: "80%" }
     ];
 
-    // 表示
+    // シャッフル（Fisher–Yates）
+    for (let i = targets.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [targets[i], targets[j]] = [targets[j], targets[i]];
+    }
+
+    // DOMに追加
     targets.forEach((item, index) => {
       const a = document.createElement("a");
       a.href = item.href;
