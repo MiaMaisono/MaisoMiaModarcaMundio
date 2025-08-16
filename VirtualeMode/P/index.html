@@ -1,1 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>#p | ϻiapol𝐯o Virtuale Mode</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: #000;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      font-family: Futura, sans-serif;
+    }
 
+    .square {
+      width: 48px;
+      height: 48px;
+      background-color: #fff;
+      position: absolute;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .square:hover {
+      transform: scale(1.2);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ランダムに配置される6つの□ -->
+  <div class="square" style="top: 12%; left: 20%;" onclick="goTo('p')"></div>
+  <div class="square" style="top: 30%; left: 65%;" onclick="goTo('q')"></div>
+  <div class="square" style="top: 55%; left: 35%;" onclick="goTo('b')"></div>
+  <div class="square" style="top: 70%; left: 10%;" onclick="goTo('d')"></div>
+  <div class="square" style="top: 15%; left: 80%;" onclick="goTo('6')"></div>
+  <div class="square" style="top: 50%; left: 75%;" onclick="goTo('9')"></div>
+
+  <script>
+    function goTo(code) {
+      window.location.href = `./${code}.html`;
+    }
+  </script>
+</body>
+</html>
