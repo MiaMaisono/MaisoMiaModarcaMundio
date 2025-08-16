@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>#P Selector</title>
   <style>
     body {
@@ -12,7 +12,7 @@
     }
     .square {
       position: absolute;
-      font-size: 29.6px; /* 48px × 0.618 ≒ 黄金比縮小 */
+      font-size: 29.6px; /* 黄金比縮小済 */
       color: white;
       text-decoration: none;
       transition: transform 0.2s ease;
@@ -23,11 +23,42 @@
   </style>
 </head>
 <body>
-  <a href="/P.html" class="square" style="top: 10%; left: 15%;">□</a>
-  <a href="/Q.html" class="square" style="top: 25%; left: 70%;">□</a>
-  <a href="/B.html" class="square" style="top: 45%; left: 40%;">□</a>
-  <a href="/D.html" class="square" style="top: 60%; left: 65%;">□</a>
-  <a href="/6.html" class="square" style="top: 75%; left: 20%;">□</a>
-  <a href="/9.html" class="square" style="top: 88%; left: 80%;">□</a>
+  <script>
+    const targets = [
+      { href: "/P/p.html" },
+      { href: "/Q/q.html" },
+      { href: "/B/b.html" },
+      { href: "/D/d.html" },
+      { href: "/6/6.html" },
+      { href: "/9/9.html" }
+    ];
+
+    // シャッフル
+    for (let i = targets.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [targets[i], targets[j]] = [targets[j], targets[i]];
+    }
+
+    // 配置候補（重なりにくいランダム範囲）
+    const positions = [
+      { top: "10%", left: "15%" },
+      { top: "25%", left: "70%" },
+      { top: "45%", left: "40%" },
+      { top: "60%", left: "65%" },
+      { top: "75%", left: "20%" },
+      { top: "88%", left: "80%" }
+    ];
+
+    // 表示
+    targets.forEach((item, index) => {
+      const a = document.createElement("a");
+      a.href = item.href;
+      a.className = "square";
+      a.style.top = positions[index].top;
+      a.style.left = positions[index].left;
+      a.textContent = "□";
+      document.body.appendChild(a);
+    });
+  </script>
 </body>
 </html>
