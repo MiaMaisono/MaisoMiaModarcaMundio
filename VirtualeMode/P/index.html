@@ -13,9 +13,12 @@
     .square {
       position: absolute;
       font-size: 29.6px; /* 黄金比縮小済 */
-      color: #FFF;
+      color: #7F7F7F;
       text-decoration: none;
       transition: transform 0.2s ease;
+    }
+    .square.p {
+      color: #000;
     }
     .square:hover {
       transform: scale(1.2);
@@ -25,7 +28,7 @@
 <body>
   <script>
     const targets = [
-      { href: "p/P.html" },
+      { href: "p/P.html", class: "p" },
       { href: "q/Q.html" },
       { href: "b/B.html" },
       { href: "d/D.html" },
@@ -39,10 +42,10 @@
       [targets[i], targets[j]] = [targets[j], targets[i]];
     }
 
-    // ランダム位置生成関数（画面内に収まるよう制限）
+    // ランダム位置生成関数（12〜96%）
     function getRandomPosition() {
       return {
-        top: Math.floor(Math.random() * 84) + 12 + '%',    
+        top: Math.floor(Math.random() * 84) + 12 + '%',
         left: Math.floor(Math.random() * 84) + 12 + '%'
       };
     }
@@ -52,7 +55,7 @@
       const a = document.createElement("a");
       const pos = getRandomPosition();
       a.href = target.href;
-      a.className = "square";
+      a.className = "square" + (target.class ? " " + target.class : "");
       a.style.top = pos.top;
       a.style.left = pos.left;
       a.textContent = "□";
