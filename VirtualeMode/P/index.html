@@ -12,7 +12,7 @@
     }
     .square {
       position: absolute;
-      font-size: 29.6px;
+      font-size: 29.6px; /* 黄金比縮小済 */
       color: white;
       text-decoration: none;
       transition: transform 0.2s ease;
@@ -33,28 +33,28 @@
       { href: "9/9.html" }
     ];
 
-    const positions = [
-      { top: "10%", left: "15%" },
-      { top: "25%", left: "70%" },
-      { top: "45%", left: "40%" },
-      { top: "60%", left: "65%" },
-      { top: "75%", left: "20%" },
-      { top: "88%", left: "80%" }
-    ];
-
-    // シャッフル（Fisher–Yates）
+    // シャッフル
     for (let i = targets.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [targets[i], targets[j]] = [targets[j], targets[i]];
     }
 
+    // ランダム位置生成関数（画面内に収まるよう制限）
+    function getRandomPosition() {
+      return {
+        top: Math.floor(Math.random() * 80) + 5 + '%',    // 5%〜85%
+        left: Math.floor(Math.random() * 80) + 5 + '%'
+      };
+    }
+
     // DOMに追加
-    targets.forEach((item, index) => {
+    targets.forEach(target => {
       const a = document.createElement("a");
-      a.href = item.href;
+      const pos = getRandomPosition();
+      a.href = target.href;
       a.className = "square";
-      a.style.top = positions[index].top;
-      a.style.left = positions[index].left;
+      a.style.top = pos.top;
+      a.style.left = pos.left;
       a.textContent = "□";
       document.body.appendChild(a);
     });
