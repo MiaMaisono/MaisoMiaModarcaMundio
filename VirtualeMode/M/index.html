@@ -1,1 +1,48 @@
-
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mahfazat | Virtuale Mode</title>
+  <meta name="description" content="Mahfazat — Miapolvo #m portfolio mint" />
+  <meta name="color-scheme" content="dark">
+  <style>
+    :root {
+      --bg: #000;
+      --fg: #7F7F7F; /* あなたの好みに合わせて控えめなグレー */
+    }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+    }
+    a {
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      text-decoration: none;
+      color: var(--fg);
+      /* 画面幅に応じたサイズ: 48px〜144pxの間で可変 */
+      font-size: clamp(48px, 12vw, 144px);
+      line-height: 1;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      user-select: none;
+    }
+    a:focus-visible {
+      outline: 2px solid #aaa;
+      outline-offset: 6px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <!-- クリック/タップで「デッサン一覧」へ。相対パスなのでGitHub Pages配下でも安全 -->
+  <a href="./list/" aria-label="Mahfazat — デッサン一覧へ">
+    ℳ𝒶𝒽𝒻𝒶𝓏𝒶𝓉
+  </a>
+</body>
+</html>
