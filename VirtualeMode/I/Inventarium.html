@@ -1,1 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>#i : Archive (archive.org)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --bg:#000; --fg:#7F7F7F; --gap:12px; --maxW:1400px;
+    }
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:Georgia,serif;}
+    .wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;}
+    h1{font-weight:normal;margin:0 0 12px;}
+    .controls{display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap;justify-content:center}
+    button{background:#111;color:var(--fg);border:1px solid var(--fg);padding:8px 16px;cursor:pointer;font-family:Georgia,serif}
+    button:hover{background:#222}
+    .grid{width:100%;max-width:var(--maxW);display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);align-items:center;justify-items:center}
+    .cell{width:100%;display:flex;align-items:center;justify-content:center;background:#111;aspect-ratio:1/1;overflow:hidden}
+    img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+    .status{margin-top:8px;opacity:.85;font-size:14px;text-align:center}
+    .back{position:fixed;top:14px;left:14px;color:var(--fg);text-decoration:none}
+    .back:hover{text-decoration:underline}
+    @media (max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+  </style>
+</head>
+<body>
+  <a class="back" href="./">← back</a>
+  <div class="wrap">
+    <h1>#i : Archive Viewer</h1>
+    <div class="controls">
+      <button id="nextBtn">Next 16</button>
+      <button id="resetBtn">Reset</button>
+    </div>
+    <div id="grid" class="grid" aria-live="polite"></div>
+    <div class="status" id="status"></div>
+  </div>
 
+  <script>
+    // ←← ここをあなたの Archive.org アイテムIDに変更
+    const ARCHIVE_ID = "YOUR_ARCHIVE_ID_HERE";
+
+    const GRID_SIZE = 16;
+    const gridEl = document.getElementById("grid");
+    const statusEl = document.getElementById("status");
+    let allUrls = [];
+    let shuffled = [];
+    let cursor = 0;
+
+    async function fetchArchiveFileList(id){
+      const res = await fetch(`https://archive.org/metadata/${id}`);
+      if(!res.ok) throw new Error("Failed to fetch archive metadata");
+      const data = await res.json();
+      const exts = new Set(["jpg","jpeg","png","gif","webp"]);
+      return (data.files||[])
+        .map(f=>f.name)
+        .filter(n=>{
+          const m = n.toLowerCase().match(/\.([a-z0-9]+)$/);
+          return m && exts.has(m[1]);
+        })
+        .map(n=>`https://archive.org/download/${id}/${encodeURIComponent(n)}`);
+    }
+
+    function shuffle(arr){
+      const a = arr.slice();
+      for(let i=a.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]]=[a[j],a[i]];
+      }
+      return a;
+    }
+
+    function renderBatch(){
+      gridEl.innerHTML = "";
+      if(cursor >= shuffled.length){
+        statusEl.textContent = "All images shown. Press Reset to start over.";
+        return;
+      }
+      const end = Math.min(cursor + GRID_SIZE, shuffled.length);
+      const batch = shuffled.slice(cursor, end);
+      // 足りない枠は空セルを置く（アップロード枚数が少ない時でも4×4の骨格を維持）
+      for(const url of batch){
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        const img = document.createElement("img");
+        img.src = url;
+        img.alt = "#i archive image";
+        cell.appendChild(img);
+        gridEl.appendChild(cell);
+      }
+      for(let k = batch.length; k < GRID_SIZE; k++){
+        const cell = document.createElement("div");
+        cell.className = "cell";
+        gridEl.appendChild(cell);
+      }
+      cursor = end;
+      statusEl.textContent = `Shown ${end} / ${shuffled.length}`;
+    }
+
+    function resetAll(){
+      cursor = 0;
+      shuffled = shuffle(allUrls);
+      renderBatch();
+    }
+
+    document.getElementById("nextBtn").addEventListener("click", renderBatch);
+    document.getElementById("resetBtn").addEventListener("click", resetAll);
+
+    (async () => {
+      try{
+        allUrls = await fetchArchiveFileList(ARCHIVE_ID);
+        if(!allUrls.length){
+          statusEl.textContent = "No images found in this Archive.org item.";
+          return;
+        }
+        resetAll();
+      }catch(e){
+        console.error(e);
+        statusEl.textContent = "Failed to load archive file list.";
+      }
+    })();
+  </script>
+</body>
+</html>
