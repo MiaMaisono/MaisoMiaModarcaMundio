@@ -16,15 +16,26 @@
       align-items: center;
       justify-content: center;
     }
-
-    .center-text {
+    a.center-link {
+      color: #7F7F7F;
+      text-decoration: none;
       font-size: 19px;
+      line-height: 1.2;
       text-align: center;
-      line-height: 0;
+      padding: 8px 12px;       /* タップしやすい余白 */
+      border: 1px solid transparent;
+    }
+    a.center-link:hover,
+    a.center-link:focus {
+      border-color: #7F7F7F;   /* うっすら枠でホバー可視化 */
+      outline: none;
     }
   </style>
 </head>
 <body>
-  <div class="center-text">ineffabilis / ineffable / ineffabile / inefavlo</div>
+  <!-- クリック/タップでギャラリーへ -->
+  <a class="center-link" href="archive.html">
+    ineffabilis / ineffable / ineffabile / inefavlo
+  </a>
 </body>
 </html>
