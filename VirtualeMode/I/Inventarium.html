@@ -7,6 +7,7 @@
   <style>
     :root {
       --bg:#000; --fg:#7F7F7F; --gap:12px; --maxW:1400px;
+      --phi: 0.6180339; /* 画像縮尺（61.80339%）*/
     }
     html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:Georgia,serif;}
     .wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;}
@@ -16,7 +17,14 @@
     button:hover{background:#222}
     .grid{width:100%;max-width:var(--maxW);display:grid;grid-template-columns:repeat(4,1fr);gap:var(--gap);align-items:center;justify-items:center}
     .cell{width:100%;display:flex;align-items:center;justify-content:center;background:#111;aspect-ratio:1/1;overflow:hidden}
-    img{max-width:100%;max-height:100%;object-fit:contain;display:block}
+    /* ←ここを変更：セル内で約62%に抑える */
+    img{
+      max-width: calc(100% * var(--phi));
+      max-height: calc(100% * var(--phi));
+      object-fit: contain;
+      display: block;
+      margin: auto; /* セル内で中央に */
+    }
     .status{margin-top:8px;opacity:.85;font-size:14px;text-align:center}
     .back{position:fixed;top:14px;left:14px;color:var(--fg);text-decoration:none}
     .back:hover{text-decoration:underline}
@@ -37,7 +45,7 @@
 
   <script>
     // ←← ここをあなたの Archive.org アイテムIDに変更
-　  const ARCHIVE_ID = "36338-d-7-c-f-335-44-f-9-8-cbb-ab-577004-d-1-ec";
+    const ARCHIVE_ID = "36338-d-7-c-f-335-44-f-9-8-cbb-ab-577004-d-1-ec";
     const GRID_SIZE = 16;
     const gridEl = document.getElementById("grid");
     const statusEl = document.getElementById("status");
