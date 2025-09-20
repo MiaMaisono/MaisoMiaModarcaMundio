@@ -1,47 +1,305 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>#o – ϻiapol𝐯o</title>
+  <meta charset="UTF-8" />
+  <title>#o</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
+    /* ========== Base ========== */
     html, body {
       margin: 0;
-      padding: 0;
       height: 100%;
-      background-color: #000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      background: #000; /* 完全黒 */
+      overflow: hidden;
+    }
+    /* 全画面の星空キャンバス */
+    .sky {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      z-index: 0;
+      pointer-events: none; /* 星はクリック遮らない */
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
     }
 
+    /* 星（記号） */
+    .star {
+      position: absolute;
+      color: #FFF;              /* 星は白のみ */
+      opacity: var(--op, 0.85); /* 微妙に個体差 */
+      transform: translate(-50%, -50%) scale(var(--sc, 1)) rotate(var(--rot, 0deg));
+      will-change: transform, opacity;
+      filter: drop-shadow(0 0 var(--glow, 0px) #FFF);
+      user-select: none;
+    }
+
+    /* またたき（わずか） */
+    @keyframes twinkle {
+      0%, 100% { opacity: var(--op, 0.85); filter: drop-shadow(0 0 var(--glow, 0px) #FFF); }
+      50%      { opacity: calc(var(--op, 0.85) * 0.6); filter: drop-shadow(0 0 calc(var(--glow, 0px) * 0.6) #FFF); }
+    }
+    .twinkle {
+      animation: twinkle var(--tw, 3.5s) ease-in-out infinite;
+    }
+
+    /* 流れ星（直線移動、長さ・角度・速度ランダム） */
+    @keyframes shoot {
+      0%   { transform: translate(var(--sx, 0px), var(--sy, 0px)) rotate(var(--ang, 0deg)) scale(var(--ssc, 1)); opacity: 0; }
+      5%   { opacity: 1; }
+      85%  { opacity: 1; }
+      100% { transform: translate(var(--ex, 600px), var(--ey, 0px)) rotate(var(--ang, 0deg)) scale(var(--ssc, 1)); opacity: 0; }
+    }
+    .meteor {
+      position: absolute;
+      left: var(--lx, 0px);
+      top:  var(--ly, 0px);
+      color: var(--mcol, #7F7F7F); /* 通常はグレー */
+      text-shadow:
+        0 0 4px var(--mcol, #7F7F7F),
+        0 0 8px var(--mcol, #7F7F7F),
+        0 0 12px var(--mcol, #7F7F7F);
+      filter: blur(0.2px);
+      opacity: 0;
+      transform: translate(var(--sx, 0px), var(--sy, 0px)) rotate(var(--ang, 0deg)) scale(var(--ssc, 1));
+      animation: shoot var(--dur, 1800ms) cubic-bezier(.4,.0,.2,1) forwards;
+      will-change: transform, opacity, text-shadow;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    /* 中央リンク（Femme / Homme） */
+    .center-links-wrap {
+      position: relative;
+      z-index: 1; /* 星より前面 */
+      height: 100%;
+      display: grid;
+      place-items: center;
+    }
     .center-links {
       display: flex;
       gap: 4em;
     }
-
     .center-links a {
       text-decoration: none;
       color: #7F7F7F;
       font-size: 3.14159265359em;
+      font-style: italic; /* 指定通りイタリック */
+      letter-spacing: 0.01em;
+      -webkit-tap-highlight-color: rgba(255,255,255,0.1);
     }
+    .center-links a.femme { font-family: Futura, sans-serif; }
+    .center-links a.homme { font-family: Helvetica, Arial, sans-serif; }
 
-    .center-links a.femme {
-      font-family: Futura, sans-serif;
-    }
+    /* 軽いホバー演出（下線のみ） */
+    .center-links a:hover { text-decoration: underline; }
 
-    .center-links a.homme {
-      font-family: Helvetica, sans-serif;
-    }
-
-    .center-links a:hover {
-      text-decoration: underline;
+    /* アクセシビリティ（キーボードフォーカス） */
+    .center-links a:focus-visible {
+      outline: 2px dashed #7F7F7F;
+      outline-offset: 6px;
     }
   </style>
 </head>
 <body>
-  <div class="center-links">
-    <a class="femme" href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/2" target="_blank">Femme</a>
-    <a class="homme" href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/1" target="_blank">Homme</a>
+  <!-- 星空レイヤ -->
+  <div class="sky" id="sky" aria-hidden="true"></div>
+
+  <!-- 中央リンク -->
+  <div class="center-links-wrap">
+    <nav class="center-links" aria-label="primary">
+      <a class="femme" href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/2" target="_blank" rel="noopener">Femme</a>
+      <a class="homme" href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/1" target="_blank" rel="noopener">Homme</a>
+    </nav>
   </div>
+
+  <script>
+    /* ===============================
+       Seeded RNG (Mulberry32)
+       =============================== */
+    function mulberry32(a) {
+      return function() {
+        a |= 0; a = a + 0x6D2B79F5 | 0;
+        var t = Math.imul(a ^ a >>> 15, 1 | a);
+        t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+        return ((t ^ t >>> 14) >>> 0) / 4294967296;
+      }
+    }
+
+    /* 位置＋日付からシード生成（再現性ある空） */
+    function seedFrom(lat, lon, dateStr) {
+      // lat/lon を適度にスケーリングして整数化
+      const la = Math.round((lat  || 0) * 1e4);
+      const lo = Math.round((lon  || 0) * 1e4);
+      const ds = Array.from(dateStr).reduce((s,c)=> (s*33 + c.charCodeAt(0))|0, 5381);
+      return (la ^ (lo<<1) ^ ds) >>> 0;
+    }
+
+    /* 乱数ユーティリティ */
+    function randRange(rng, min, max)  { return min + (max - min) * rng(); }
+    function randInt(rng, min, max)    { return Math.floor(randRange(rng, min, max + 1)); }
+    function choice(rng, arr)          { return arr[Math.floor(rng() * arr.length)]; }
+
+    /* 星記号セット（指定通り） */
+    const STAR_CHARS = ["⭐︎","✳︎","✴︎","★"];
+
+    /* 星空生成 */
+    function generateStars(rng, count) {
+      const sky = document.getElementById('sky');
+      const w = sky.clientWidth;
+      const h = sky.clientHeight;
+
+      // 星を大量にばら撒く（重くてもOKとのことなので多め）
+      for (let i = 0; i < count; i++) {
+        const span = document.createElement('span');
+        span.className = 'star' + (rng() < 0.6 ? ' twinkle' : ''); // 半分以上を点滅
+        span.textContent = choice(rng, STAR_CHARS);
+
+        // 配置・サイズ・輝き
+        const x = randInt(rng, 0, w);
+        const y = randInt(rng, 0, h);
+        const sc   = randRange(rng, 0.6, 1.8);
+        const glow = randRange(rng, 0, 1.8);
+        const rot  = randRange(rng, -10, 10); // わずかな傾き
+        const op   = randRange(rng, 0.55, 1.0);
+        const tw   = randRange(rng, 2.2, 5.4).toFixed(2) + 's';
+
+        span.style.left = x + 'px';
+        span.style.top  = y + 'px';
+        span.style.setProperty('--sc',  sc);
+        span.style.setProperty('--glow', glow + 'px');
+        span.style.setProperty('--rot', rot + 'deg');
+        span.style.setProperty('--op',  op);
+        span.style.setProperty('--tw',  tw);
+
+        sky.appendChild(span);
+      }
+    }
+
+    /* 流れ星生成（通常はグレー #7F7F7F、超稀にランダム色） */
+    function spawnMeteor(rng) {
+      const sky = document.getElementById('sky');
+      const w = sky.clientWidth;
+      const h = sky.clientHeight;
+
+      const m = document.createElement('span');
+      m.className = 'meteor';
+      m.textContent = choice(rng, STAR_CHARS);
+
+      // 出現エッジと角度：ランダム
+      // 左→右、右→左、上→下、下→上、斜め などを確率で
+      const mode = randInt(rng, 0, 3); // 0: left→right, 1: right→left, 2: top→bottom, 3: bottom→top
+      let startX, startY, deltaX, deltaY, angDeg;
+
+      const spanTravel = randRange(rng, w*0.5, w*1.2); // 走行距離
+      const duration   = randRange(rng, 1000, 2500);   // 速度
+
+      if (mode === 0) { // left -> right (斜め気味)
+        startX = -50; startY = randRange(rng, h*0.1, h*0.9);
+        angDeg = randRange(rng, -20, 20);
+        deltaX = spanTravel; deltaY = randRange(rng, -h*0.2, h*0.2);
+      } else if (mode === 1) { // right -> left
+        startX = w + 50; startY = randRange(rng, h*0.1, h*0.9);
+        angDeg = randRange(rng, 160, 200);
+        deltaX = -spanTravel; deltaY = randRange(rng, -h*0.2, h*0.2);
+      } else if (mode === 2) { // top -> bottom
+        startX = randRange(rng, -50, w + 50); startY = -50;
+        angDeg = randRange(rng, 70, 110);
+        deltaX = randRange(rng, -w*0.2, w*0.2); deltaY = spanTravel;
+      } else { // bottom -> top
+        startX = randRange(rng, -50, w + 50); startY = h + 50;
+        angDeg = randRange(rng, -110, -70);
+        deltaX = randRange(rng, -w*0.2, w*0.2); deltaY = -spanTravel;
+      }
+
+      // サイズ（大きくしすぎない、でも豪華な尾に見えるようスケール）
+      const scale = randRange(rng, 1.1, 2.2);
+
+      // レア：ランダム色の流れ星（約 2%）
+      let color = '#7F7F7F';
+      if (rng() < 0.02) {
+        // HSLで派手に（グレー制限を超える「超レア」）
+        const hue = Math.floor(randRange(rng, 0, 360));
+        color = `hsl(${hue} 100% 70%)`;
+      }
+
+      m.style.setProperty('--lx', startX + 'px');
+      m.style.setProperty('--ly', startY + 'px');
+      m.style.setProperty('--sx', '0px');
+      m.style.setProperty('--sy', '0px');
+      m.style.setProperty('--ex', deltaX + 'px');
+      m.style.setProperty('--ey', deltaY + 'px');
+      m.style.setProperty('--ang', angDeg + 'deg');
+      m.style.setProperty('--ssc', scale);
+      m.style.setProperty('--dur', duration + 'ms');
+      m.style.setProperty('--mcol', color);
+
+      sky.appendChild(m);
+
+      // 終了後にDOMから除去
+      m.addEventListener('animationend', () => m.remove(), { once: true });
+    }
+
+    /* 流れ星スケジューラ：一定間隔＋ランダムゆらぎで出現 */
+    function startMeteorShow(rng) {
+      function scheduleNext() {
+        // ベース間隔 2.5〜6秒 + 少しゆらぎ
+        const wait = randRange(rng, 2500, 6000);
+        setTimeout(() => {
+          spawnMeteor(rng);
+          // まれに同時に2〜3個
+          if (rng() < 0.12) spawnMeteor(rng);
+          if (rng() < 0.04)  spawnMeteor(rng);
+          scheduleNext();
+        }, wait);
+      }
+      scheduleNext();
+    }
+
+    /* 初期化：位置情報→シード → 星空生成 */
+    (function init() {
+      const date = new Date();
+      const dateStr = [
+        date.getUTCFullYear(),
+        ('0' + (date.getUTCMonth()+1)).slice(-2),
+        ('0' + date.getUTCDate()).slice(-2)
+      ].join('-');
+
+      function boot(lat, lon) {
+        const seedVal = seedFrom(lat, lon, dateStr);
+        const rng = mulberry32(seedVal);
+
+        // 画面サイズから星数を調整（重くてOKだが、端末に優しめの上限も）
+        const sky = document.getElementById('sky');
+        const w = sky.clientWidth;
+        const h = sky.clientHeight;
+        const density = 0.00045; // 1ピクセル当たりの星密度
+        const baseCount = Math.max(300, Math.min(1600, Math.floor(w * h * density)));
+
+        generateStars(rng, baseCount);
+        startMeteorShow(rng);
+
+        // リサイズ時は再生成（過剰再生成を避けるため簡易デバウンス）
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+          clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(() => {
+            document.querySelectorAll('.star').forEach(n => n.remove());
+            generateStars(rng, baseCount);
+          }, 200);
+        });
+      }
+
+      // 位置情報取得
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          pos => boot(pos.coords.latitude, pos.coords.longitude),
+          ()   => boot(null, null), // 拒否→日付のみ
+          { enableHighAccuracy: false, maximumAge: 600000, timeout: 8000 }
+        );
+      } else {
+        boot(null, null);
+      }
+    })();
+  </script>
 </body>
 </html>
