@@ -19,15 +19,15 @@
       height:100vh;width:100vw;display:flex;align-items:center;justify-content:center;
     }
     .square{
-      /* 画面の長辺×割合の正方形 */
       width: calc(max(100vw, 100vh) * var(--area));
       height: calc(max(100vw, 100vh) * var(--area));
       display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
-      gap: 10px;
+      gap: 8px; /* ← ここで全体の隙間を少し詰めた */
     }
     /* 記号ボタン（ユニバーサル） */
     .controls{
       display:flex;gap:14px;align-items:center;justify-content:center;
+      margin-top: 0; /* ← 上方向の余白を詰めた */
     }
     .btn{
       width:38px;height:32px;display:flex;align-items:center;justify-content:center;
@@ -35,7 +35,7 @@
       cursor:pointer;font-size:18px;line-height:1;user-select:none;
     }
     .btn:hover{ background:#222; }
-    /* 4×4 正方グリッド（正方形内にぴったり収める） */
+    /* 4×4 正方グリッド */
     .grid{
       flex:1; width:100%; height:100%;
       display:grid;
@@ -48,7 +48,7 @@
       width:100%; height:100%;
       background:#111;
       display:flex; align-items:center; justify-content:center;
-      overflow:hidden; /* 念のため */
+      overflow:hidden;
     }
     .cell img{
       max-width: calc(100% * var(--imgScale));
@@ -60,7 +60,8 @@
     /* 分数風ステータス */
     .status{
       display:flex;align-items:center;justify-content:center;
-      height:36px; font-size:14px; opacity:.9;
+      font-size:14px; opacity:.9;
+      margin-bottom:12px; /* ← 数字の下に12px余白 */
     }
     .frac{
       display:flex;flex-direction:column;align-items:center;line-height:1;
@@ -92,7 +93,6 @@
   </div>
 
   <script>
-    // ←← あなたの Archive.org アイテムID
     const ARCHIVE_ID = "36338-d-7-c-f-335-44-f-9-8-cbb-ab-577004-d-1-ec";
 
     const GRID_SIZE = 16; // 4×4 固定
@@ -131,7 +131,6 @@
       gridEl.innerHTML = "";
 
       if(cursor >= shuffled.length){
-        // すべて表示済み：最後の状態を維持（ボタンでReset可能）
         shownEl.textContent = shuffled.length;
         totalEl.textContent = shuffled.length;
         return;
@@ -140,7 +139,6 @@
       const end   = Math.min(cursor + GRID_SIZE, shuffled.length);
       const batch = shuffled.slice(cursor, end);
 
-      // 16枠を必ず埋める（不足分は空セル）
       for(let i=0;i<GRID_SIZE;i++){
         const cell = document.createElement("div");
         cell.className = "cell";
@@ -148,7 +146,7 @@
           const img = document.createElement("img");
           img.src = batch[i];
           img.alt = "#i archive image";
-          img.loading = "lazy";       // 軽量化
+          img.loading = "lazy";
           img.decoding = "async";
           img.fetchPriority = "low";
           cell.appendChild(img);
