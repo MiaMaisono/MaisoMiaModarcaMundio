@@ -148,27 +148,35 @@
       return cols*rows; // 144
     }
 
-    function setupObserver(){
-      if(observer) observer.disconnect();
-      let inflight = 0;
-      observer = new IntersectionObserver((entries)=>{
-        entries.forEach(entry=>{
-          const img = entry.target;
-          if(entry.isIntersecting && !img.src && img.dataset.src){
-            if(inflight >= MAX_CONCURRENCY) return;
-            inflight++;
-            const url = img.dataset.src;
-            const tmp = new Image();
-            tmp.onload = ()=>{ img.src = url; inflight--; };
-            tmp.onerror = ()=>{ inflight--; };
-            tmp.decoding = "async";
-            tmp.loading  = "lazy";
-            tmp.fetchPriority = "low";
-            tmp.src = url;
-          }
-        });
-      }, { root: gridEl, rootMargin: "200px", threshold: 0.01 });
-      return observer;
+function setupObserver(){
+  if(observer) observer.disconnect();
+  let inflight = 0;
+
+  observer = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      const img = entry.target;
+      if(entry.isIntersecting && !img.src && img.dataset.src){
+        if(inflight >= MAX_CONCURRENCY) return;
+        inflight++;
+
+        const url = img.dataset.src;
+        const tmp = new Image();
+        tmp.onload  = ()=>{ img.src = url; inflight--; };
+        tmp.onerror = ()=>{ inflight--; };
+        tmp.decoding = "async";
+        tmp.loading  = "lazy";
+        tmp.fetchPriority = "low";
+        tmp.src = url;
+      }
+    });
+  }, {
+    // ★ ここを viewport に：ページ全体スクロールでも発火する
+    root: null,
+    rootMargin: "200px",
+    threshold: 0.01
+  });
+
+  return observer;
     }
 
     function renderPage(){
