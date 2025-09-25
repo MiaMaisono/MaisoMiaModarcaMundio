@@ -8,26 +8,22 @@
     :root{
       --bg:#000;
       --fg:#7F7F7F;                 /* Græy */
-      --gap:1.414213562373px;
-      --imgScale:0.618033988749;
+      --gap:1.414213562373px;       /* タイル間 */
+      --imgScale:0.618033988749;    /* タイル内の画像縮尺 */
     }
     html,body{
       margin:0; height:100%;
       background:var(--bg); color:var(--fg);
       font-family:Georgia, serif;
     }
-    .stage{
-      position:fixed; inset:0;
-      display:flex; align-items:center; justify-content:center;
-    }
+    .stage{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
     .frame{
       width:100vw; height:100vh;
       display:flex; flex-direction:column;
       align-items:center; justify-content:space-between;
     }
     .topbar, .bottombar{
-      width:100%; display:flex;
-      align-items:center; justify-content:center;
+      width:100%; display:flex; align-items:center; justify-content:center;
       padding:6px 0;
     }
     .btn{
@@ -35,8 +31,7 @@
       display:flex; align-items:center; justify-content:center;
       border:1px solid var(--fg);
       background:#111; color:var(--fg);
-      cursor:pointer; user-select:none;
-      line-height:1; font-size:18px;
+      cursor:pointer; user-select:none; line-height:1; font-size:18px;
     }
     .btn:hover{ background:#222; }
 
@@ -65,45 +60,61 @@
 <body>
   <div class="stage">
     <div class="frame">
+      <!-- 上＝戻る -->
       <div class="topbar">
-        <!-- 進む -->
-        <button id="nextBtn" class="btn" aria-label="Next">⟳</button>
+        <button id="prevBtn" class="btn" aria-label="Previous">⟳</button>
       </div>
 
       <div id="grid" class="grid" aria-live="polite"></div>
 
+      <!-- 下＝進む -->
       <div class="bottombar">
-        <!-- 戻る -->
-        <button id="prevBtn" class="btn" aria-label="Previous">⟲</button>
+        <button id="nextBtn" class="btn" aria-label="Next">⟲</button>
       </div>
     </div>
   </div>
 
   <script>
     // ===== 設定 =====
-    const TOTAL_IMAGES = 1728;
-    const PAGES = 12;
-    const PER_PAGE = TOTAL_IMAGES / PAGES;
-    const BASE_PATH = "img/";      // 画像格納先
-    const FILE_EXT  = ".jpg";      // 拡張子
-    const PAD       = 4;           // ゼロ埋め桁数
-    const PREV_PAGE_URL = "ineffabilis.html"; 
-    const NEXT_PAGE_URL = "https://archive.org/details/XXXX";
+    const ARCHIVE_ID = "36338-d-7-c-f-335-44-f-9-8-cbb-ab-577004-d-1-ec";
+    const ARCHIVE_DETAIL_URL = "https://archive.org/details/36338-d-7-c-f-335-44-f-9-8-cbb-ab-577004-d-1-ec";
+    const PREV_PAGE_URL = "./";          // 1ページ目で「戻る」時に遷移（同階層 index.html を想定）
 
+    const TOTAL_TARGET = 1728;           // 目標総数
+    const PAGES = 12;
+    const PER_PAGE = TOTAL_TARGET / PAGES; // 144
+
+    // 画面比率に最も近い 144分割パターン（cols, rows）
     const CANDIDATES = [
       [1,144],[2,72],[3,48],[4,36],[6,24],[8,18],[9,16],
       [12,12],[16,9],[18,8],[24,6],[36,4],[48,3],[72,2],[144,1]
     ];
 
-    const gridEl = document.getElementById('grid');
+    const gridEl  = document.getElementById('grid');
     const nextBtn = document.getElementById('nextBtn');
     const prevBtn = document.getElementById('prevBtn');
 
-    let order = [];
+    let allUrls = [];      // Archive から取得した全画像URL
+    let displayList = [];  // 表示用に 1,728 (または入手可能な分) をシャッフルした配列
     let pageIndex = 0;
 
-    function pad(num, size){ return String(num).padStart(size, '0'); }
-    function imageUrl(n){ return BASE_PATH + pad(n, PAD) + FILE_EXT; }
+    // ---- Archive.org メタデータから画像URL一覧を取得
+    async function fetchArchiveFileList(id){
+      const res = await fetch(`https://archive.org/metadata/${encodeURIComponent(id)}`);
+      if(!res.ok) throw new Error("Failed to fetch archive metadata");
+      const data = await res.json();
+      const exts = new Set(["jpg","jpeg","png","gif","webp","jp2","tif","tiff"]);
+      return (data.files||[])
+        .filter(f=>{
+          const name = (f.name||"").toLowerCase();
+          const m = name.match(/\.([a-z0-9]+)$/);
+          const byExt = m && exts.has(m[1]);
+          const fmt = (f.format||"").toLowerCase();
+          const byFmt = /(image|jpeg|png|gif|jp2|tiff)/.test(fmt);
+          return byExt || byFmt;
+        })
+        .map(f => `https://archive.org/download/${id}/${encodeURIComponent(f.name)}`);
+    }
 
     function shuffle(arr){
       const a = arr.slice();
@@ -115,33 +126,32 @@
     }
 
     function pickBestGrid(){
-      const vw = window.innerWidth, vh = window.innerHeight;
-      const target = vw / vh;
+      const target = window.innerWidth / window.innerHeight;
       let best = CANDIDATES[0], bestDiff = Infinity;
       for(const [cols, rows] of CANDIDATES){
-        const ratio = cols / rows;
-        const d = Math.abs(ratio - target);
+        const d = Math.abs((cols/rows) - target);
         if(d < bestDiff){ bestDiff = d; best = [cols, rows]; }
       }
       return best;
     }
 
     function renderPage(){
-      const start = pageIndex * PER_PAGE;
-      const end   = Math.min(start + PER_PAGE, order.length);
-      const slice = order.slice(start, end);
-
       const [cols, rows] = pickBestGrid();
       gridEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
       gridEl.style.gridTemplateRows    = `repeat(${rows}, 1fr)`;
       gridEl.innerHTML = "";
 
-      for(let i=0; i<cols*rows; i++){
+      const start = pageIndex * PER_PAGE;
+      const end   = Math.min(start + PER_PAGE, displayList.length);
+      const slice = displayList.slice(start, end);
+      const totalCells = cols * rows; // 常に 144
+
+      for(let i=0; i<totalCells; i++){
         const cell = document.createElement('div');
         cell.className = 'cell';
         if(i < slice.length){
           const img = document.createElement('img');
-          img.src = imageUrl(slice[i]+1);
+          img.src = slice[i];
           img.alt = "Inventarium image";
           img.loading = "lazy";
           img.decoding = "async";
@@ -152,15 +162,10 @@
       }
     }
 
-    function initOrder(){
-      order = shuffle(Array.from({length: TOTAL_IMAGES}, (_,i)=>i));
-      pageIndex = 0;
-      renderPage();
-    }
-
     function nextPage(){
       if(pageIndex >= PAGES-1){
-        window.location.href = NEXT_PAGE_URL;
+        // 12ページ目の「進む」→ Archive.org 詳細ページへ
+        window.location.href = ARCHIVE_DETAIL_URL;
       } else {
         pageIndex++;
         renderPage();
@@ -169,6 +174,7 @@
 
     function prevPage(){
       if(pageIndex <= 0){
+        // 1ページ目の「戻る」→ 前画面へ
         window.location.href = PREV_PAGE_URL;
       } else {
         pageIndex--;
@@ -180,7 +186,21 @@
     prevBtn.addEventListener('click', prevPage);
     window.addEventListener('resize', renderPage);
 
-    initOrder();
+    (async () => {
+      try{
+        allUrls = await fetchArchiveFileList(ARCHIVE_ID);
+        // 取得できた中から 1,728（未満ならその分）をランダム抽出
+        const pick = shuffle(allUrls).slice(0, TOTAL_TARGET);
+        // 必要枚数に満たない場合は欠番セルを残す（重複表示はしない）
+        displayList = pick;
+        renderPage();
+      }catch(e){
+        console.error(e);
+        // 失敗時は空のまま（枠のみ表示）
+        displayList = [];
+        renderPage();
+      }
+    })();
   </script>
 </body>
 </html>
