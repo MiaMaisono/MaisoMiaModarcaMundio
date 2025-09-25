@@ -6,54 +6,67 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root{
+      /* 色と寸法（必要ならここだけ調整） */
       --bg:#000;
-      --grey:#7F7F7F;                     /* タイル色 */
-      --white:#FFF;                       /* ボタン記号色 */
-      --gap:1.414213562373px;             /* タイル間隔（黒が覗く） */
-      --phiInv:0.618033988749;            /* 画像 = タイルの 1/φ */
+      --grey:#7F7F7F;                       /* タイル色 */
+      --white:#FFF;                         /* ボタンの記号色 */
+      --gap:1.414213562373px;               /* タイル間隔（黒が覗く） */
+      --phiInv:0.618033988749;              /* 画像 = タイルの 1/φ */
+      --barH:36px;                          /* ボタンの見た目高さ（枠込み） */
+      --topOffset:12px;                     /* 上ボタンの追加オフセット */
+      --bottomOffset:28px;                  /* 下ボタンの追加オフセット（大きいほど下へ） */
     }
+
     html,body{
       margin:0;height:100%;
       background:var(--bg);color:var(--grey);
       font-family:Georgia,serif;
     }
 
+    /* 全体は固定配置。ボタンは絶対配置で safe-area + 任意オフセットに吸着 */
     .stage{position:fixed;inset:0;display:flex;flex-direction:column}
 
-    /* 上下ボタン（白記号）。safe-area で見切れ防止 */
     .topbar,.bottombar{
-      display:flex;justify-content:center;align-items:center;
-      padding: calc(8px + env(safe-area-inset-top,0px)) 0 6px;
+      position:fixed; left:0; right:0;
+      display:flex; justify-content:center; align-items:center;
+      pointer-events:auto;
     }
-    .bottombar{ padding: 6px 0 calc(8px + env(safe-area-inset-bottom,0px)); }
+    .topbar   { top:  calc(env(safe-area-inset-top,0px)    + var(--topOffset)); }
+    .bottombar{ bottom:calc(env(safe-area-inset-bottom,0px) + var(--bottomOffset)); }
+
     .btn{
-      width:42px;height:36px;display:flex;align-items:center;justify-content:center;
+      width:42px; height:var(--barH);
+      display:flex; align-items:center; justify-content:center;
       background:var(--bg); color:var(--white);
-      border:1px solid var(--grey); cursor:pointer; user-select:none;
-      font-size:18px; line-height:1;
+      border:1px solid var(--grey);
+      font-size:18px; line-height:1; user-select:none; cursor:pointer;
     }
 
-    /* 中央グリッド。隙間はそのまま黒（背景が見える）。枠線は出さない。 */
+    /* 中央のキャンバス。ボタンの占有分だけ上下に余白を確保して見切れ防止 */
     .center{
-      flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
-      padding:6px 8px; box-sizing:border-box;
+      position:absolute; inset:0;
+      /* 上下の必要余白 = safe-area + offset + ボタン高さ + 少しの呼吸 */
+      padding-top:    calc(env(safe-area-inset-top,0px)    + var(--topOffset)    + var(--barH) + 8px);
+      padding-bottom: calc(env(safe-area-inset-bottom,0px) + var(--bottomOffset) + var(--barH) + 8px);
+      padding-left:8px; padding-right:8px; box-sizing:border-box;
+
+      display:flex; align-items:center; justify-content:center;
     }
+
+    /* 144セルのグリッド。隙間は黒、タイルは Græy（枠線なし） */
     .grid{
       width:100%; height:100%;
       display:grid; gap:var(--gap);
       align-items:center; justify-items:center;
     }
-
-    /* Græyタイル。ボーダーは無し。 */
     .cell{
       width:100%; height:100%;
       background:var(--grey);
       display:flex; align-items:center; justify-content:center;
       overflow:hidden;
     }
-    /* 画像はタイルの 0.618 倍で内側に収める（上下左右に黒は出ない：背景はタイル色） */
     .cell img{
-      max-width: calc(100% * var(--phiInv));
+      max-width:  calc(100% * var(--phiInv));
       max-height: calc(100% * var(--phiInv));
       object-fit:contain; display:block; margin:auto;
     }
@@ -61,7 +74,7 @@
 </head>
 <body>
   <div class="stage">
-    <!-- 上：戻る -->
+    <!-- 上：戻る（⟳） -->
     <div class="topbar">
       <button id="prevBtn" class="btn" aria-label="Previous">⟳</button>
     </div>
@@ -71,23 +84,22 @@
       <div id="grid" class="grid" aria-live="polite"></div>
     </div>
 
-    <!-- 下：進む -->
+    <!-- 下：進む（⟲） -->
     <div class="bottombar">
       <button id="nextBtn" class="btn" aria-label="Next">⟲</button>
     </div>
   </div>
 
   <script>
-    // ===== 設定 =====
+    /* ===== 設定 ===== */
     const ARCHIVE_ID = "36338-d-7-c-f-335-44-f-9-8-cbb-ab-577004-d-1-ec";
-    const ARCHIVE_DETAIL_URL = "https://archive.org/embed/36338-d-7-c-f-335-44-f-9-8-cbb-ab-577004-d-1-ec";
+    const ARCHIVE_DETAIL_URL = "https://archive.org/details/36338-d-7-c-f-335-44-f-9-8-cbb-ab-577004-d-1-ec";
     const PREV_PAGE_URL = "./";            // 1ページ目の戻る先
 
-    const TOTAL_TARGET = 1728;             // 12ページ×144
-    const PAGES = 12;
-    const PER_PAGE = TOTAL_TARGET / PAGES; // 144
+    const TOTAL_TARGET = 1728;             // 12ページ × 144
+    const PAGES = 12, PER_PAGE = TOTAL_TARGET / PAGES;
 
-    // 分割候補（列, 行）＝常に144セル。比率に最も近いものを選ぶ。
+    /* 144分割候補（列, 行）から画面比に最も近いものを選ぶ */
     const CANDIDATES = [
       [1,144],[2,72],[3,48],[4,36],[6,24],[8,18],[9,16],
       [12,12],[16,9],[18,8],[24,6],[36,4],[48,3],[72,2],[144,1]
@@ -97,11 +109,11 @@
     const nextBtn = document.getElementById('nextBtn');
     const prevBtn = document.getElementById('prevBtn');
 
-    // 軽量化：IntersectionObserver と並列制限
+    /* 軽量：IO + 並列制限 */
     const MAX_CONCURRENCY = 12;
 
-    let allUrls = [];      // Archiveから取得したURL
-    let displayList = [];  // 1,728（未満ならその分）
+    let allUrls = [];
+    let displayList = [];
     let pageIndex = 0;
     let observer;
 
@@ -145,38 +157,34 @@
       const [cols, rows]=pickBestGrid();
       gridEl.style.gridTemplateColumns=`repeat(${cols},1fr)`;
       gridEl.style.gridTemplateRows=`repeat(${rows},1fr)`;
-      return cols*rows; // 144
+      return cols*rows; // 常に 144
     }
 
-function setupObserver(){
-  if(observer) observer.disconnect();
-  let inflight = 0;
-
-  observer = new IntersectionObserver((entries)=>{
-    entries.forEach(entry=>{
-      const img = entry.target;
-      if(entry.isIntersecting && !img.src && img.dataset.src){
-        if(inflight >= MAX_CONCURRENCY) return;
-        inflight++;
-
-        const url = img.dataset.src;
-        const tmp = new Image();
-        tmp.onload  = ()=>{ img.src = url; inflight--; };
-        tmp.onerror = ()=>{ inflight--; };
-        tmp.decoding = "async";
-        tmp.loading  = "lazy";
-        tmp.fetchPriority = "low";
-        tmp.src = url;
-      }
-    });
-  }, {
-    // ★ ここを viewport に：ページ全体スクロールでも発火する
-    root: null,
-    rootMargin: "200px",
-    threshold: 0.01
-  });
-
-  return observer;
+    function setupObserver(){
+      if(observer) observer.disconnect();
+      let inflight = 0;
+      observer = new IntersectionObserver((entries)=>{
+        entries.forEach(entry=>{
+          const img = entry.target;
+          if(entry.isIntersecting && !img.src && img.dataset.src){
+            if(inflight >= MAX_CONCURRENCY) return;
+            inflight++;
+            const url = img.dataset.src;
+            const loader = new Image();
+            loader.onload  = ()=>{ img.src = url; inflight--; };
+            loader.onerror = ()=>{ inflight--; };
+            loader.decoding = "async";
+            loader.loading  = "lazy";
+            loader.fetchPriority = "low";
+            loader.src = url;
+          }
+        });
+      }, {
+        root: null,              // viewport を基準
+        rootMargin: "200px",
+        threshold: 0.01
+      });
+      return observer;
     }
 
     function renderPage(){
@@ -194,8 +202,8 @@ function setupObserver(){
         cell.className='cell';
         if(i < slice.length){
           const img=document.createElement('img');
-          img.dataset.src = slice[i];   // まず data-src に保持
-          io.observe(img);              // 画面に入ったら読み込み
+          img.dataset.src = slice[i];
+          io.observe(img);
           cell.appendChild(img);
         }
         gridEl.appendChild(cell);
@@ -224,7 +232,7 @@ function setupObserver(){
     (async () => {
       try{
         const urls = await fetchArchiveFileList(ARCHIVE_ID);
-        displayList = shuffle(urls).slice(0, TOTAL_TARGET); // 1,728（未満ならその分）
+        displayList = shuffle(urls).slice(0, TOTAL_TARGET);
       }catch(e){
         console.error(e);
         displayList = [];
