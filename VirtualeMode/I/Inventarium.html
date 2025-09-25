@@ -12,7 +12,7 @@
       --white:#FFF;                         /* ボタンの記号色 */
       --gap:1.414213562373px;               /* タイル間隔（黒が覗く） */
       --phiInv:0.618033988749;              /* 画像 = タイルの 1/φ */
-      --barH:12px;                          /* ボタンの見た目高さ（枠込み） */
+      --barH:48px;                          /* ボタンの見た目高さ（枠込み） */
       --topOffset:12px;                     /* 上ボタンの追加オフセット */
       --bottomOffset:12px;                  /* 下ボタンの追加オフセット（大きいほど下へ） */
     }
@@ -110,7 +110,7 @@
     const prevBtn = document.getElementById('prevBtn');
 
     /* 軽量：IO + 並列制限 */
-    const MAX_CONCURRENCY = 12;
+    const MAX_CONCURRENCY = 8;   // 12 → 8 に（より安定）
 
     let allUrls = [];
     let displayList = [];
@@ -118,21 +118,22 @@
     let observer;
 
     async function fetchArchiveFileList(id){
-      const res = await fetch(`https://archive.org/metadata/${encodeURIComponent(id)}`);
-      if(!res.ok) throw new Error("metadata fetch failed");
-      const data = await res.json();
-      const exts = new Set(["jpg","jpeg","png","gif","webp","jp2","tif","tiff"]);
-      return (data.files || [])
-        .filter(f=>{
-          const n=(f.name||"").toLowerCase();
-          const m=n.match(/\.([a-z0-9]+)$/);
-          const byExt=m && exts.has(m[1]);
-          const fmt=(f.format||"").toLowerCase();
-          const byFmt=/(image|jpeg|png|gif|jp2|tiff)/.test(fmt);
-          return byExt || byFmt;
-        })
-        .map(f => `https://archive.org/download/${id}/${encodeURIComponent(f.name)}`);
-    }
+  const res = await fetch(`https://archive.org/metadata/${encodeURIComponent(id)}`);
+  if(!res.ok) throw new Error("metadata fetch failed");
+  const data = await res.json();
+
+  // 許可拡張子（小文字で比較）
+  const exts = new Set(["jpg","jpeg","png","gif","webp","jp2","tif","tiff"]);
+
+  return (data.files || [])
+    .map(f => f?.name || "")
+    .filter(name => {
+      const m = name.toLowerCase().match(/\.([a-z0-9]+)$/);
+      return m && exts.has(m[1]);  // ← format には頼らない
+    })
+    // サブフォルダ（例: "JPEG/xxx.jpg"）もそのまま通す
+    .map(name => `https://archive.org/download/${id}/${encodeURIComponent(name)}`);
+}
 
     function shuffle(a){
       const arr=a.slice();
@@ -160,32 +161,29 @@
       return cols*rows; // 常に 144
     }
 
-    function setupObserver(){
-      if(observer) observer.disconnect();
-      let inflight = 0;
-      observer = new IntersectionObserver((entries)=>{
-        entries.forEach(entry=>{
-          const img = entry.target;
-          if(entry.isIntersecting && !img.src && img.dataset.src){
-            if(inflight >= MAX_CONCURRENCY) return;
-            inflight++;
-            const url = img.dataset.src;
-            const loader = new Image();
-            loader.onload  = ()=>{ img.src = url; inflight--; };
-            loader.onerror = ()=>{ inflight--; };
-            loader.decoding = "async";
-            loader.loading  = "lazy";
-            loader.fetchPriority = "low";
-            loader.src = url;
-          }
-        });
-      }, {
-        root: null,              // viewport を基準
-        rootMargin: "200px",
-        threshold: 0.01
-      });
-      return observer;
-    }
+function setupObserver(){
+  if(observer) observer.disconnect();
+
+  observer = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      const img = entry.target;
+      if(entry.isIntersecting && !img.src && img.dataset.src){
+        // ★ 直接 src を設定。余計な Image() は作らない
+        img.src = img.dataset.src;
+        // 読み込み終わったら監視解除（不要な再発火を防止）
+        const off = () => { observer.unobserve(img); img.removeEventListener('load', off); img.removeEventListener('error', off); };
+        img.addEventListener('load', off);
+        img.addEventListener('error', off);
+      }
+    });
+  }, {
+    root: null,               // ビューポート基準
+    rootMargin: "120px",      // 見え始め手前で読込み（軽量）
+    threshold: 0              // 1px でも入ったら
+  });
+
+  return observer;
+}
 
     function renderPage(){
       gridEl.innerHTML="";
