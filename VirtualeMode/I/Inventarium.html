@@ -1,59 +1,44 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="UTF-8" />
   <title>Inventarium 1728</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- 高速化：事前にHTTP接続を張る -->
+  <link rel="preconnect" href="https://archive.org" crossorigin>
+  <link rel="preconnect" href="https://iiif.archivelab.org" crossorigin>
+
   <style>
     :root{
-      /* 色と寸法（必要ならここだけ調整） */
-      --bg:#000;
-      --grey:#7F7F7F;                       /* タイル色 */
-      --white:#FFF;                         /* ボタンの記号色 */
-      --gap:1.414213562373px;               /* タイル間隔（黒が覗く） */
-      --phiInv:0.618033988749;              /* 画像 = タイルの 1/φ */
-      --barH:48px;                          /* ボタンの見た目高さ（枠込み） */
-      --topOffset:12px;                     /* 上ボタンの追加オフセット */
-      --bottomOffset:12px;                  /* 下ボタンの追加オフセット（大きいほど下へ） */
+      --bg:#000; --grey:#7F7F7F; --white:#FFF;
+      --gap:1.414213562373px;            /* タイル間は黒が覗く */
+      --phiInv:0.618033988749;           /* 画像 = タイルの 1/φ */
+      --barH:36px; --topOffset:12px; --bottomOffset:28px;
     }
-
-    html,body{
-      margin:0;height:100%;
-      background:var(--bg);color:var(--grey);
-      font-family:Georgia,serif;
-    }
-
-    /* 全体は固定配置。ボタンは絶対配置で safe-area + 任意オフセットに吸着 */
-    .stage{position:fixed;inset:0;display:flex;flex-direction:column}
+    html,body{ margin:0; height:100%; background:var(--bg); color:var(--grey); font-family:Georgia,serif; }
+    .stage{ position:fixed; inset:0; display:flex; flex-direction:column }
 
     .topbar,.bottombar{
-      position:fixed; left:0; right:0;
-      display:flex; justify-content:center; align-items:center;
-      pointer-events:auto;
+      position:fixed; left:0; right:0; display:flex; justify-content:center; align-items:center;
     }
-    .topbar   { top:  calc(env(safe-area-inset-top,0px)    + var(--topOffset)); }
-    .bottombar{ bottom:calc(env(safe-area-inset-bottom,0px) + var(--bottomOffset)); }
+    .topbar   { top:    calc(env(safe-area-inset-top,0px)    + var(--topOffset)); }
+    .bottombar{ bottom: calc(env(safe-area-inset-bottom,0px) + var(--bottomOffset)); }
 
     .btn{
       width:42px; height:var(--barH);
       display:flex; align-items:center; justify-content:center;
-      background:var(--bg); color:var(--white);
-      border:1px solid var(--grey);
+      background:#000; color:var(--white); border:1px solid var(--grey);
       font-size:18px; line-height:1; user-select:none; cursor:pointer;
     }
 
-    /* 中央のキャンバス。ボタンの占有分だけ上下に余白を確保して見切れ防止 */
     .center{
       position:absolute; inset:0;
-      /* 上下の必要余白 = safe-area + offset + ボタン高さ + 少しの呼吸 */
       padding-top:    calc(env(safe-area-inset-top,0px)    + var(--topOffset)    + var(--barH) + 8px);
       padding-bottom: calc(env(safe-area-inset-bottom,0px) + var(--bottomOffset) + var(--barH) + 8px);
       padding-left:8px; padding-right:8px; box-sizing:border-box;
-
       display:flex; align-items:center; justify-content:center;
     }
-
-    /* 144セルのグリッド。隙間は黒、タイルは Græy（枠線なし） */
     .grid{
       width:100%; height:100%;
       display:grid; gap:var(--gap);
@@ -61,147 +46,109 @@
     }
     .cell{
       width:100%; height:100%;
-      background:var(--grey);
-      display:flex; align-items:center; justify-content:center;
-      overflow:hidden;
+      background:var(--grey);           /* タイル（枠線なし） */
+      display:flex; align-items:center; justify-content:center; overflow:hidden;
     }
     .cell img{
       max-width:  calc(100% * var(--phiInv));
       max-height: calc(100% * var(--phiInv));
       object-fit:contain; display:block; margin:auto;
+      /* ヒント：初期描画優先 */
+      image-rendering:auto;
     }
   </style>
 </head>
 <body>
   <div class="stage">
-    <!-- 上：戻る（⟳） -->
-    <div class="topbar">
-      <button id="prevBtn" class="btn" aria-label="Previous">⟳</button>
-    </div>
-
-    <!-- 中央：グリッド -->
-    <div class="center">
-      <div id="grid" class="grid" aria-live="polite"></div>
-    </div>
-
-    <!-- 下：進む（⟲） -->
-    <div class="bottombar">
-      <button id="nextBtn" class="btn" aria-label="Next">⟲</button>
-    </div>
+    <div class="topbar"><button id="prevBtn" class="btn" aria-label="Previous">⟳</button></div>
+    <div class="center"><div id="grid" class="grid" aria-live="polite"></div></div>
+    <div class="bottombar"><button id="nextBtn" class="btn" aria-label="Next">⟲</button></div>
   </div>
 
   <script>
     /* ===== 設定 ===== */
     const ARCHIVE_ID = "36338-d-7-c-f-335-44-f-9-8-cbb-ab-577004-d-1-ec";
     const ARCHIVE_DETAIL_URL = "https://archive.org/details/36338-d-7-c-f-335-44-f-9-8-cbb-ab-577004-d-1-ec";
-    const PREV_PAGE_URL = "./";            // 1ページ目の戻る先
+    const PREV_PAGE_URL = "./";
 
-    const TOTAL_TARGET = 1728;             // 12ページ × 144
-    const PAGES = 12, PER_PAGE = TOTAL_TARGET / PAGES;
+    const TOTAL_TARGET = 1728;                  // 12ページ × 144
+    const PAGES = 12, PER_PAGE = TOTAL_TARGET / PAGES;  // 144
+    const THUMB_SIDE = 256;                     // サムネ生成サイズ（IIIF）。128/192/256/320等好みで
 
-    /* 144分割候補（列, 行）から画面比に最も近いものを選ぶ */
-    const CANDIDATES = [
-      [1,144],[2,72],[3,48],[4,36],[6,24],[8,18],[9,16],
-      [12,12],[16,9],[18,8],[24,6],[36,4],[48,3],[72,2],[144,1]
-    ];
+    // 144セル候補（列, 行）
+    const CANDS = [[1,144],[2,72],[3,48],[4,36],[6,24],[8,18],[9,16],[12,12],[16,9],[18,8],[24,6],[36,4],[48,3],[72,2],[144,1]];
 
     const gridEl  = document.getElementById('grid');
     const nextBtn = document.getElementById('nextBtn');
     const prevBtn = document.getElementById('prevBtn');
 
-    /* 軽量：IO + 並列制限 */
-    const MAX_CONCURRENCY = 8;   // 12 → 8 に（より安定）
-
-    let allUrls = [];
-    let displayList = [];
+    let displayList = [];  // {orig, thumb} の配列
     let pageIndex = 0;
-    let observer;
 
-    async function fetchArchiveFileList(id){
-  const res = await fetch(`https://archive.org/metadata/${encodeURIComponent(id)}`);
-  if(!res.ok) throw new Error("metadata fetch failed");
-  const data = await res.json();
+    /* 画像リスト取得（拡張子で判定） */
+    async function fetchList(id){
+      const res = await fetch(`https://archive.org/metadata/${encodeURIComponent(id)}`);
+      if(!res.ok) throw new Error("metadata fetch failed");
+      const data = await res.json();
 
-  // 許可拡張子（小文字で比較）
-  const exts = new Set(["jpg","jpeg","png","gif","webp","jp2","tif","tiff"]);
+      const exts = new Set(["jpg","jpeg","png","gif","webp"]); // 表示優先で絞る（tif/jp2は除外）
+      const names = (data.files||[])
+        .map(f => f?.name || "")
+        .filter(name => {
+          const m = name.toLowerCase().match(/\.([a-z0-9]+)$/);
+          return m && exts.has(m[1]);
+        });
 
-  return (data.files || [])
-    .map(f => f?.name || "")
-    .filter(name => {
-      const m = name.toLowerCase().match(/\.([a-z0-9]+)$/);
-      return m && exts.has(m[1]);  // ← format には頼らない
-    })
-    // サブフォルダ（例: "JPEG/xxx.jpg"）もそのまま通す
-    .map(name => `https://archive.org/download/${id}/${encodeURIComponent(name)}`);
-}
-
-    function shuffle(a){
-      const arr=a.slice();
-      for(let i=arr.length-1;i>0;i--){
-        const j=Math.floor(Math.random()*(i+1));
-        [arr[i],arr[j]]=[arr[j],arr[i]];
-      }
-      return arr;
+      // 各ファイルの元画像URLと IIIF サムネURL
+      return names.map(name => {
+        const orig  = `https://archive.org/download/${id}/${encodeURIComponent(name)}`;
+        // IIIF: https://iiif.archivelab.org/iiif/ITEM$NAME/full/!W,H/0/default.jpg
+        const thumb = `https://iiif.archivelab.org/iiif/${id}$${encodeURIComponent(name)}/full/!${THUMB_SIDE},${THUMB_SIDE}/0/default.jpg`;
+        return { orig, thumb };
+      });
     }
 
-    function pickBestGrid(){
+    function shuffle(a){ const r=a.slice(); for(let i=r.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [r[i],r[j]]=[r[j],r[i]]; } return r; }
+
+    function bestGrid(){
       const r = gridEl.clientWidth / gridEl.clientHeight;
-      let best=CANDIDATES[0], diff=Infinity;
-      for(const [c,rows] of CANDIDATES){
-        const d=Math.abs((c/rows)-r);
-        if(d<diff){ diff=d; best=[c,rows]; }
-      }
+      let best=CANDS[0], diff=Infinity;
+      for(const [c,rows] of CANDS){ const d=Math.abs((c/rows)-r); if(d<diff){ diff=d; best=[c,rows]; } }
       return best;
     }
 
     function applyGrid(){
-      const [cols, rows]=pickBestGrid();
+      const [cols, rows]=bestGrid();
       gridEl.style.gridTemplateColumns=`repeat(${cols},1fr)`;
       gridEl.style.gridTemplateRows=`repeat(${rows},1fr)`;
-      return cols*rows; // 常に 144
+      return cols*rows; // 144
     }
 
-function setupObserver(){
-  if(observer) observer.disconnect();
-
-  observer = new IntersectionObserver((entries)=>{
-    entries.forEach(entry=>{
-      const img = entry.target;
-      if(entry.isIntersecting && !img.src && img.dataset.src){
-        // ★ 直接 src を設定。余計な Image() は作らない
-        img.src = img.dataset.src;
-        // 読み込み終わったら監視解除（不要な再発火を防止）
-        const off = () => { observer.unobserve(img); img.removeEventListener('load', off); img.removeEventListener('error', off); };
-        img.addEventListener('load', off);
-        img.addEventListener('error', off);
-      }
-    });
-  }, {
-    root: null,               // ビューポート基準
-    rootMargin: "120px",      // 見え始め手前で読込み（軽量）
-    threshold: 0              // 1px でも入ったら
-  });
-
-  return observer;
-}
-
     function renderPage(){
-      gridEl.innerHTML="";
-      const totalCells = applyGrid();
+      gridEl.innerHTML = "";
+      const total = applyGrid();
 
       const start = pageIndex * PER_PAGE;
-      const end   = Math.min(start + PER_PAGE, displayList.length);
-      const slice = displayList.slice(start, end);
+      const slice = displayList.slice(start, start + PER_PAGE); // 144件（未満ならその分）
 
-      const io = setupObserver();
+      // 144枚は「即時に src をセット」してブラウザのHTTP/2並列に任せる（最速）
+      // フォールバック：thumbエラー時はorigへ
+      for(let i=0; i<total; i++){
+        const cell = document.createElement('div');
+        cell.className = 'cell';
 
-      for(let i=0;i<totalCells;i++){
-        const cell=document.createElement('div');
-        cell.className='cell';
         if(i < slice.length){
-          const img=document.createElement('img');
-          img.dataset.src = slice[i];
-          io.observe(img);
+          const {orig, thumb} = slice[i];
+          const img = document.createElement('img');
+          img.width = 256;  // レイアウト安定用ヒント（実サイズに拘らない）
+          img.height = 256;
+          img.decoding = "async";
+          img.loading  = "eager";        // 初回は積極的に
+          img.fetchPriority = "high";    // 体感を上げる
+
+          img.onerror = () => { if(img.src !== orig) img.src = orig; }; // 失敗時に元画像へ
+          img.src = thumb;
+
           cell.appendChild(img);
         }
         gridEl.appendChild(cell);
@@ -209,18 +156,12 @@ function setupObserver(){
     }
 
     function nextPage(){
-      if(pageIndex>=PAGES-1){
-        window.location.href = ARCHIVE_DETAIL_URL;
-      }else{
-        pageIndex++; renderPage();
-      }
+      if(pageIndex >= PAGES-1) window.location.href = ARCHIVE_DETAIL_URL;
+      else { pageIndex++; renderPage(); }
     }
     function prevPage(){
-      if(pageIndex<=0){
-        window.location.href = PREV_PAGE_URL;
-      }else{
-        pageIndex--; renderPage();
-      }
+      if(pageIndex <= 0) window.location.href = PREV_PAGE_URL;
+      else { pageIndex--; renderPage(); }
     }
 
     nextBtn.addEventListener('click', nextPage);
@@ -229,13 +170,14 @@ function setupObserver(){
 
     (async () => {
       try{
-        const urls = await fetchArchiveFileList(ARCHIVE_ID);
-        displayList = shuffle(urls).slice(0, TOTAL_TARGET);
+        const all = await fetchList(ARCHIVE_ID);
+        // 1,728件ぶん（未満ならその分）をランダム選抜
+        displayList = shuffle(all).slice(0, TOTAL_TARGET);
       }catch(e){
         console.error(e);
         displayList = [];
       }
-      renderPage();
+      renderPage();  // 初回144枚は即時ロード
     })();
   </script>
 </body>
