@@ -3,45 +3,42 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Mahfazat | Virtuale Mode</title>
-  <meta name="description" content="Mahfazat — Miapolvo #m portfolio mint" />
+  <title>ℳ𝒶𝒽𝒻𝒶𝓏𝒶𝓉 — デッサン一覧</title>
   <meta name="color-scheme" content="dark">
   <style>
-    :root {
-      --bg: #000;
-      --fg: #7F7F7F;
-    }
+    :root { --bg:#000; --fg:#e5e5e5; --muted:#7f7f7f; }
     html, body {
-      height: 100%;
-      margin: 0;
-      background: var(--bg);
+      margin:0;
+      background:var(--bg);
+      color:var(--fg);
+      font-family: system-ui, -apple-system, Helvetica, Arial, "Noto Sans JP", sans-serif;
     }
-    a {
-      position: fixed;
-      inset: 0;
-      display: grid;
-      place-items: center;
-      text-decoration: none;
-      color: var(--fg);
-      font-size: 12px;
-      line-height: 1;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      letter-spacing: 0.02em;
-      cursor: pointer;
-      user-select: none;
-    }
-    a:focus-visible {
-      outline: 1px solid #aaa;
-      outline-offset: 12px;
-      border-radius: 12px;
-    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 20px 80px; }
+    header { display:flex; align-items:baseline; gap:16px; margin-bottom: 24px; }
+    header h1 { font-size: 24px; margin: 0; }
+    .grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+    .card { background:#0b0b0b; border:1px solid #1a1a1a; border-radius:12px; padding:12px; }
+    .thumb { aspect-ratio:1/1; width:100%; background:#111; border-radius:10px; object-fit:cover; }
+    .title { font-size:14px; margin-top:8px; }
+    .meta { margin-top:6px; font-size:13px; color:var(--muted); line-height:1.5; }
   </style>
 </head>
 <body>
-  <!-- クリック/タップで「デッサン一覧」へ。相対パスなのでGitHub Pages配下でも安全 -->
-  <a href="./list/" aria-label="Mahfazat — デッサン一覧へ">
-    ℳ𝒶𝒽𝒻𝒶𝓏𝒶𝓉
-  </a>
+  <div class="wrap">
+    <header>
+      <h1>ℳ𝒶𝒽𝒻𝒶𝓏𝒶𝓉 — デッサン一覧</h1>
+    </header>
+
+    <section class="grid">
+      <!-- サンプル作品カード。必要に応じて増やしてください -->
+      <article class="card">
+        <a href="./m-0001.html">
+          <img class="thumb" src="https://ipfs.io/ipfs/<画像CID>" alt="m-0001 preview" />
+          <div class="title">m-0001 — mode; made without model</div>
+          <div class="meta">tashwīd v1.0 · ERC-1155 · id=1</div>
+        </a>
+      </article>
+    </section>
+  </div>
 </body>
 </html>
