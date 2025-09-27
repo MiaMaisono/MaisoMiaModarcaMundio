@@ -1,228 +1,223 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>#o – ϻiapol𝐯o</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    html, body {
-      margin: 0;
-      height: 100%;
-      background: #000; /* 完全黒 */
-      overflow: hidden;
-    }
-    /* 星空キャンバス（⭐︎の固定描画 + 流れ星） */
-    canvas#sky {
-      position: fixed;
-      inset: 0;
-      display: block;
-      background: #000;
-      z-index: 0;
-      pointer-events: none; /* クリック透過 */
-    }
-    /* 中央リンク（そのまま） */
-    .center {
-      position: relative;
-      z-index: 1;
-      height: 100%;
-      display: grid;
-      place-items: center;
-    }
-    .links {
-      display: flex;
-      gap: 4em;
-    }
-    .links a {
-      text-decoration: none;
-      color: #7F7F7F;
-      font-size: 3.14159265359em;
-      font-style: italic;
-      letter-spacing: 0.01em;
-      -webkit-tap-highlight-color: rgba(255,255,255,0.1);
-    }
-    .links a.femme { font-family: Futura, sans-serif; }
-    .links a.homme { font-family: Helvetica, Arial, sans-serif; }
-    .links a:hover { text-decoration: underline; }
-    .links a:focus-visible {
-      outline: 2px dashed #7F7F7F;
-      outline-offset: 6px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>#o – ϻiapol𝐯o</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  html, body { margin:0; height:100%; background:#000; overflow:hidden; }
+  canvas#sky { position:fixed; inset:0; display:block; background:#000; z-index:0; pointer-events:none; }
+
+  /* 中央リンクは小さな⭐︎だけ（テキストなし） */
+  .center {
+    position:relative; z-index:1; height:100%;
+    display:grid; place-items:center;
+  }
+  .links {
+    display:flex; gap:3.5em; align-items:center; justify-content:center;
+  }
+  .links a {
+    text-decoration:none; color:#7F7F7F;
+    font-style:italic; /* 既存方針を踏襲 */
+    -webkit-tap-highlight-color:rgba(255,255,255,0.1);
+  }
+  .links a .starlink {
+    display:inline-block; line-height:1; user-select:none;
+    /* 画面サイズに追随して小さめに保つ */
+    font-size: min(3.0vw, 28px);
+  }
+  .links a:hover .starlink { text-decoration:underline; }
+  .links a:focus-visible { outline:2px dashed #7F7F7F; outline-offset:6px; }
+</style>
 </head>
 <body>
   <canvas id="sky" aria-hidden="true"></canvas>
 
+  <!-- テキストは出さず、小さな⭐︎だけでリンク -->
   <div class="center">
     <nav class="links" aria-label="primary">
-      <a class="femme" href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/2" target="_blank" rel="noopener">Femme</a>
-      <a class="homme" href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/1" target="_blank" rel="noopener">Homme</a>
+      <a href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/2" target="_blank" rel="noopener" title="Femme">
+        <span class="starlink">⭐︎</span>
+      </a>
+      <a href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/1" target="_blank" rel="noopener" title="Homme">
+        <span class="starlink">⭐︎</span>
+      </a>
     </nav>
   </div>
 
-  <script>
-    /* =========================
-       1) 画像→⭐︎座標 抽出設定
-       ========================= */
-    const SOURCE_IMAGE = 'sky-1728.png'; // Your Sky で保存したPNG
-    const IMG_SIZE = 1728;               // 正方・円形の星図
-    const THRESH = 235;                  // 白検出しきい値（R/G/B >= 235）
-    const STEP = 2;                      // 走査間隔（軽量化）
-    const MIN_BLOB = 1;                  // 連結成分の最小ピクセル数
-    const MAX_BLOB = 80;                 // 大きすぎる塊を除外
-    const STAR_CHAR = '⭐︎';              // 星は記号のみ
-    const STAR_COLOR = '#FFF';           // 星は白のみ
-    const STAR_FONT_PX = 9;              // ⭐︎の基準サイズ（px）
+<script>
+/* =========================
+   画像→⭐︎ 座標・サイズ抽出
+   ========================= */
+const SOURCE_IMAGE = 'sky-610-mecca-1728.png'; // ←スクショのファイル名
+const IMG_SIZE = 1728;                         // Your Sky 出力サイズ
+const THRESH = 235;                            // 白判定 (R/G/B >= 235)
+const STEP = 2;                                // 走査間隔（軽量）
+const MIN_BLOB = 1;                            // 小さすぎるノイズ除外
+const MAX_BLOB = 100;                          // 大きすぎる塊除外（星雲等）
+const STAR_CHAR = '⭐︎';                        // 描画する記号
+const STAR_COLOR = '#FFF';                     // 星は白のみ
 
-    /* =========================
-       2) 流れ星（既存仕様）
-       ========================= */
-    const PROB_BASE = 1/19;              // 通常
-    const PROB_RARE = 1/114;             // レア（白）
-    const PROB_ULTRA = 1/786;            // 超レア（交差）
-    const METEOR_INTERVAL_MS = 1000;
-    const STAR_CHARS = ["⭐︎","✳︎","✴︎","★"]; // 流れ星の文字種（色は#7F7F7F/#FFFのみ）
+const canvas = document.getElementById('sky');
+const ctx = canvas.getContext('2d');
+let starNorms = [];     // 正規化座標＆重み [{x,y,w}]
+let starField = null;   // オフスクリーンに固定描画
+const meteors = [];     // 流れ星（任意：必要なら後で足せます）
 
-    const canvas = document.getElementById('sky');
-    const ctx = canvas.getContext('2d');
+function fitCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  renderStarField();
+}
+window.addEventListener('resize', fitCanvas, { passive:true });
 
-    let starNorms = [];  // 0..1 に正規化した⭐︎座標の配列 [{x,y,weight}]
-    let starField = null; // オフスクリーンの固定描画
-    const meteors = [];
+(async function init(){
+  fitCanvas();
+  await extractStarsFromImage();
+  renderStarField();
+})();
 
-    function fitCanvas() {
-      const w = window.innerWidth, h = window.innerHeight;
-      canvas.width = w;
-      canvas.height = h;
-      renderStarField();  // サイズに合わせて⭐︎を描き直す
+/* 画像の白い点をクラスタリングして重心と面積を取得 */
+async function extractStarsFromImage() {
+  const img = await loadImage(SOURCE_IMAGE);
+  const off = document.createElement('canvas');
+  off.width = IMG_SIZE; off.height = IMG_SIZE;
+  const ox = off.getContext('2d');
+  ox.drawImage(img, 0, 0, IMG_SIZE, IMG_SIZE);
+
+  const cx = IMG_SIZE/2, cy = IMG_SIZE/2, R = IMG_SIZE/2;
+  const src = ox.getImageData(0, 0, IMG_SIZE, IMG_SIZE);
+  const mask = new Uint8Array(IMG_SIZE * IMG_SIZE);
+
+  for (let y=0; y<IMG_SIZE; y+=STEP){
+    const dy = y - cy, dy2 = dy*dy;
+    for (let x=0; x<IMG_SIZE; x+=STEP){
+      const dx = x - cx;
+      if (dx*dx + dy2 > R*R) continue; // 円外は無視
+      const i = (y*IMG_SIZE + x) * 4;
+      const r = src.data[i], g = src.data[i+1], b = src.data[i+2];
+      if (r>=THRESH && g>=THRESH && b>=THRESH) mask[y*IMG_SIZE + x] = 1;
     }
-    window.addEventListener('resize', fitCanvas, { passive: true });
+  }
 
-    /* =========================
-       画像から白点を検出 → 連結成分で重心抽出
-       ========================= */
-    async function extractStars() {
-      const img = await loadImage(SOURCE_IMAGE);
+  // 連結成分ラベリング (BFS on STEPグリッド)
+  const visited = new Uint8Array(mask.length);
+  const stars = [];
+  const qx = [], qy = [];
 
-      const off = document.createElement('canvas');
-      off.width = IMG_SIZE;
-      off.height = IMG_SIZE;
-      const ox = off.getContext('2d');
-      ox.drawImage(img, 0, 0, IMG_SIZE, IMG_SIZE);
+  for (let y0=0; y0<IMG_SIZE; y0+=STEP){
+    for (let x0=0; x0<IMG_SIZE; x0+=STEP){
+      const idx0 = y0*IMG_SIZE + x0;
+      if (!mask[idx0] || visited[idx0]) continue;
 
-      const cx = IMG_SIZE/2, cy = IMG_SIZE/2, R = IMG_SIZE/2;
-      const src = ox.getImageData(0, 0, IMG_SIZE, IMG_SIZE);
-      const mask = new Uint8Array(IMG_SIZE * IMG_SIZE);
+      let sumX=0, sumY=0, count=0;
+      let head=0, tail=0;
+      qx[tail]=x0; qy[tail]=y0; tail++;
+      visited[idx0]=1;
 
-      for (let y = 0; y < IMG_SIZE; y += STEP) {
-        const dy = y - cy, dy2 = dy*dy;
-        for (let x = 0; x < IMG_SIZE; x += STEP) {
-          const dx = x - cx;
-          if (dx*dx + dy2 > R*R) continue; // 円外は無視
-          const i = (y * IMG_SIZE + x) * 4;
-          const r = src.data[i], g = src.data[i+1], b = src.data[i+2];
-          if (r >= THRESH && g >= THRESH && b >= THRESH) mask[y*IMG_SIZE + x] = 1;
+      while (head<tail){
+        const x=qx[head], y=qy[head]; head++;
+        const idx=y*IMG_SIZE + x;
+        sumX+=x; sumY+=y; count++;
+
+        neigh(x+STEP, y); neigh(x-STEP, y);
+        neigh(x, y+STEP); neigh(x, y-STEP);
+
+        function neigh(nx, ny){
+          if (nx<0||ny<0||nx>=IMG_SIZE||ny>=IMG_SIZE) return;
+          const nidx = ny*IMG_SIZE + nx;
+          if (!mask[nidx] || visited[nidx]) return;
+          visited[nidx]=1; qx[tail]=nx; qy[tail]=ny; tail++;
         }
       }
 
-      // 連結成分 → 重心
-      const visited = new Uint8Array(mask.length);
-      const qx = [], qy = [];
-      const stars = [];
-      for (let y0 = 0; y0 < IMG_SIZE; y0 += STEP) {
-        for (let x0 = 0; x0 < IMG_SIZE; x0 += STEP) {
-          const idx0 = y0*IMG_SIZE + x0;
-          if (!mask[idx0] || visited[idx0]) continue;
-
-          let sumX = 0, sumY = 0, count = 0;
-          let head = 0, tail = 0;
-          qx[tail] = x0; qy[tail] = y0; tail++;
-          visited[idx0] = 1;
-
-          while (head < tail) {
-            const x = qx[head], y = qy[head]; head++;
-            const idx = y*IMG_SIZE + x;
-            sumX += x; sumY += y; count++;
-
-            // 4近傍（STEPグリッド）
-            neigh(x+STEP, y);
-            neigh(x-STEP, y);
-            neigh(x, y+STEP);
-            neigh(x, y-STEP);
-
-            function neigh(nx, ny){
-              if (nx<0 || ny<0 || nx>=IMG_SIZE || ny>=IMG_SIZE) return;
-              const nidx = ny*IMG_SIZE + nx;
-              if (!mask[nidx] || visited[nidx]) return;
-              visited[nidx] = 1;
-              qx[tail]=nx; qy[tail]=ny; tail++;
-            }
-          }
-
-          if (count >= MIN_BLOB && count <= MAX_BLOB) {
-            const gx = sumX / count;
-            const gy = sumY / count;
-            // 円の境界から2px内側のみ採用（ノイズ除去）
-            const dx = gx - cx, dy = gy - cy;
-            if (dx*dx + dy*dy <= (R-2)*(R-2)) {
-              stars.push({ x: gx/IMG_SIZE, y: gy/IMG_SIZE, w: count });
-            }
-          }
+      if (count>=MIN_BLOB && count<=MAX_BLOB){
+        const gx = sumX / count, gy = sumY / count;
+        const dx = gx - cx, dy = gy - cy;
+        if (dx*dx + dy*dy <= (R-2)*(R-2)) {
+          stars.push({ x: gx/IMG_SIZE, y: gy/IMG_SIZE, w: count });
         }
       }
-      starNorms = stars;
     }
+  }
 
-    /* =========================
-       正規化座標をビューポートに投影して⭐︎描画（オフスクリーン）
-       ========================= */
-    function renderStarField() {
-      if (!starNorms.length) return;
-      const w = canvas.width, h = canvas.height;
-      const size = Math.min(w, h);
-      const off = document.createElement('canvas');
-      off.width = w;
-      off.height = h;
-      const ox = off.getContext('2d');
+  // 面積のレンジを測って、⭐︎サイズの比率に反映
+  const wMin = Math.min(...stars.map(s=>s.w));
+  const wMax = Math.max(...stars.map(s=>s.w));
+  // 安定化用オフセット
+  const eps = 0.0001;
+  starNorms = stars.map(s=>{
+    const t = (s.w - wMin) / Math.max(eps, (wMax - wMin)); // 0..1
+    return { x:s.x, y:s.y, w:s.w, t };
+  });
 
-      // 背景
-      ox.fillStyle = '#000';
-      ox.fillRect(0, 0, w, h);
+  console.log(`Stars detected: ${starNorms.length}, blob range: [${wMin}, ${wMax}]`);
+}
 
-      // 円形クリップ
-      ox.save();
-      ox.beginPath();
-      ox.arc(w/2, h/2, size/2, 0, Math.PI*2);
-      ox.clip();
+/* 正規化座標をビューポートに投影し、⭐︎を等級っぽくサイズ出しして固定描画 */
+function renderStarField() {
+  if (!starNorms.length) return;
+  const w = canvas.width, h = canvas.height;
+  const size = Math.min(w, h);               // 正円でフィット
+  const ox = new OffscreenCanvas ? new OffscreenCanvas(w, h) : document.createElement('canvas');
+  ox.width = w; ox.height = h;
+  const octx = ox.getContext('2d');
 
-      // ⭐︎描画
-      ox.fillStyle = STAR_COLOR;
-      ox.textAlign = 'center';
-      ox.textBaseline = 'middle';
+  // 背景
+  octx.fillStyle = '#000';
+  octx.fillRect(0, 0, w, h);
 
-      const fontPx = Math.max(6, STAR_FONT_PX * (size / IMG_SIZE)); // サイズに追随
-      ox.font = `${fontPx}px serif`;
+  // 円形クリップ
+  octx.save();
+  octx.beginPath();
+  octx.arc(w/2, h/2, size/2, 0, Math.PI*2);
+  octx.clip();
 
-      const offsetX = (w - size)/2;
-      const offsetY = (h - size)/2;
+  // ⭐︎のサイズは「最小6px〜最大14px」を目安に、blob面積に比例
+  const pxMin = 6 * (size/IMG_SIZE);
+  const pxMax = 14 * (size/IMG_SIZE);
 
-      for (let i=0;i<starNorms.length;i++){
-        const sx = offsetX + starNorms[i].x * size;
-        const sy = offsetY + starNorms[i].y * size;
-        ox.fillText(STAR_CHAR, sx, sy);
-      }
+  octx.fillStyle = STAR_COLOR;
+  octx.textAlign = 'center';
+  octx.textBaseline = 'middle';
 
-      ox.restore();
-      starField = off;
-      // 一度描いておく
-      ctx.clearRect(0, 0, w, h);
-      ctx.drawImage(starField, 0, 0);
-    }
+  const offX = (w - size)/2, offY = (h - size)/2;
 
-    /* =========================
-       流れ星（記号）
-       ========================= */
-    function spawnMeteor(options={}) {
-      const w = canvas.width;
-      const h = canvas.height;
+  for (let i=0;i<starNorms.length;i++){
+    const s = starNorms[i];
+    const fs = pxMin + (pxMax - pxMin) * Math.pow(s.t, 0.65); // 明るめを少し強調
+    octx.font = `${fs}px serif`;
+    const sx = offX + s.x * size;
+    const sy = offY + s.y * size;
+    octx.fillText(STAR_CHAR, sx, sy);
+  }
 
-      const side = Math.floor(Math.random() * 4); // 0:左,1:右,2:上
+  octx.restore();
+
+  // 画面へ転送
+  if (ox.transferToImageBitmap) {
+    const bmp = ox.transferToImageBitmap();
+    // 一度クリアして貼る
+    ctx.clearRect(0,0,w,h);
+    createImageBitmap(bmp).then(()=>{ ctx.drawImage(bmp,0,0); });
+    starField = bmp;
+  } else {
+    starField = ox;
+    ctx.clearRect(0,0,w,h);
+    ctx.drawImage(starField, 0, 0);
+  }
+}
+
+/* 画像ローダ */
+function loadImage(src){
+  return new Promise((res, rej)=>{
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = ()=>res(img);
+    img.onerror = rej;
+    img.src = src;
+  });
+}
+</script>
+</body>
+</html>
