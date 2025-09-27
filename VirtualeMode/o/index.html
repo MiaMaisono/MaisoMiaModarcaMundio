@@ -11,7 +11,7 @@
       background: #000; /* 完全黒 */
       overflow: hidden;
     }
-    /* 星空キャンバス（静止星 + 流れ星） */
+    /* 星空キャンバス（⭐︎の固定描画 + 流れ星） */
     canvas#sky {
       position: fixed;
       inset: 0;
@@ -60,215 +60,169 @@
   </div>
 
   <script>
-    /* ========= 設定 ========= */
-    const STAR_COUNT = 1728;           // 総星数（固定）
-    const USE_CIRCLE = true;           // 円形の星空にする
-    const USE_MILKY_BAND = true;       // 天の川風の密度バイアス
-    const BAND_ANGLE_DEG = 43;         // 帯の角度（象徴的に設定）
-    const BAND_SIGMA = 0.18;           // 帯の幅（0.1〜0.3推奨）
-    const STAR_MIN_RADIUS_CSS = 0.5;   // CSS px（DPRにより実質1デバイスpx）
-    const STAR_MAX_RADIUS_CSS = 1.2;   // 少しだけばらつき
+    /* =========================
+       1) 画像→⭐︎座標 抽出設定
+       ========================= */
+    const SOURCE_IMAGE = 'sky-1728.png'; // Your Sky で保存したPNG
+    const IMG_SIZE = 1728;               // 正方・円形の星図
+    const THRESH = 235;                  // 白検出しきい値（R/G/B >= 235）
+    const STEP = 2;                      // 走査間隔（軽量化）
+    const MIN_BLOB = 1;                  // 連結成分の最小ピクセル数
+    const MAX_BLOB = 80;                 // 大きすぎる塊を除外
+    const STAR_CHAR = '⭐︎';              // 星は記号のみ
+    const STAR_COLOR = '#FFF';           // 星は白のみ
+    const STAR_FONT_PX = 9;              // ⭐︎の基準サイズ（px）
 
-    // 流れ星（イスラム象徴確率）
-    const PROB_BASE = 1/19;            // 基本：十九
-    const PROB_RARE = 1/114;           // レア：114スーラ
-    const PROB_ULTRA = 1/786;          // 超レア：786（Basmala）
-    const METEOR_INTERVAL_MS = 1000;   // 1秒ごとに判定
-    const STAR_CHARS = ["⭐︎","✳︎","✴︎","★"];
+    /* =========================
+       2) 流れ星（既存仕様）
+       ========================= */
+    const PROB_BASE = 1/19;              // 通常
+    const PROB_RARE = 1/114;             // レア（白）
+    const PROB_ULTRA = 1/786;            // 超レア（交差）
+    const METEOR_INTERVAL_MS = 1000;
+    const STAR_CHARS = ["⭐︎","✳︎","✴︎","★"]; // 流れ星の文字種（色は#7F7F7F/#FFFのみ）
 
-    /* ========= Canvas 準備 ========= */
     const canvas = document.getElementById('sky');
     const ctx = canvas.getContext('2d');
 
-    function resizeCanvas() {
-      const dpr = Math.max(1, window.devicePixelRatio || 1);
-      const w = Math.floor(window.innerWidth);
-      const h = Math.floor(window.innerHeight);
-      canvas.width = Math.floor(w * dpr);
-      canvas.height = Math.floor(h * dpr);
-      canvas.style.width = w + 'px';
-      canvas.style.height = h + 'px';
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0); // 以後はCSS px基準で描ける
-      redrawStatic();
+    let starNorms = [];  // 0..1 に正規化した⭐︎座標の配列 [{x,y,weight}]
+    let starField = null; // オフスクリーンの固定描画
+    const meteors = [];
+
+    function fitCanvas() {
+      const w = window.innerWidth, h = window.innerHeight;
+      canvas.width = w;
+      canvas.height = h;
+      renderStarField();  // サイズに合わせて⭐︎を描き直す
+    }
+    window.addEventListener('resize', fitCanvas, { passive: true });
+
+    /* =========================
+       画像から白点を検出 → 連結成分で重心抽出
+       ========================= */
+    async function extractStars() {
+      const img = await loadImage(SOURCE_IMAGE);
+
+      const off = document.createElement('canvas');
+      off.width = IMG_SIZE;
+      off.height = IMG_SIZE;
+      const ox = off.getContext('2d');
+      ox.drawImage(img, 0, 0, IMG_SIZE, IMG_SIZE);
+
+      const cx = IMG_SIZE/2, cy = IMG_SIZE/2, R = IMG_SIZE/2;
+      const src = ox.getImageData(0, 0, IMG_SIZE, IMG_SIZE);
+      const mask = new Uint8Array(IMG_SIZE * IMG_SIZE);
+
+      for (let y = 0; y < IMG_SIZE; y += STEP) {
+        const dy = y - cy, dy2 = dy*dy;
+        for (let x = 0; x < IMG_SIZE; x += STEP) {
+          const dx = x - cx;
+          if (dx*dx + dy2 > R*R) continue; // 円外は無視
+          const i = (y * IMG_SIZE + x) * 4;
+          const r = src.data[i], g = src.data[i+1], b = src.data[i+2];
+          if (r >= THRESH && g >= THRESH && b >= THRESH) mask[y*IMG_SIZE + x] = 1;
+        }
+      }
+
+      // 連結成分 → 重心
+      const visited = new Uint8Array(mask.length);
+      const qx = [], qy = [];
+      const stars = [];
+      for (let y0 = 0; y0 < IMG_SIZE; y0 += STEP) {
+        for (let x0 = 0; x0 < IMG_SIZE; x0 += STEP) {
+          const idx0 = y0*IMG_SIZE + x0;
+          if (!mask[idx0] || visited[idx0]) continue;
+
+          let sumX = 0, sumY = 0, count = 0;
+          let head = 0, tail = 0;
+          qx[tail] = x0; qy[tail] = y0; tail++;
+          visited[idx0] = 1;
+
+          while (head < tail) {
+            const x = qx[head], y = qy[head]; head++;
+            const idx = y*IMG_SIZE + x;
+            sumX += x; sumY += y; count++;
+
+            // 4近傍（STEPグリッド）
+            neigh(x+STEP, y);
+            neigh(x-STEP, y);
+            neigh(x, y+STEP);
+            neigh(x, y-STEP);
+
+            function neigh(nx, ny){
+              if (nx<0 || ny<0 || nx>=IMG_SIZE || ny>=IMG_SIZE) return;
+              const nidx = ny*IMG_SIZE + nx;
+              if (!mask[nidx] || visited[nidx]) return;
+              visited[nidx] = 1;
+              qx[tail]=nx; qy[tail]=ny; tail++;
+            }
+          }
+
+          if (count >= MIN_BLOB && count <= MAX_BLOB) {
+            const gx = sumX / count;
+            const gy = sumY / count;
+            // 円の境界から2px内側のみ採用（ノイズ除去）
+            const dx = gx - cx, dy = gy - cy;
+            if (dx*dx + dy*dy <= (R-2)*(R-2)) {
+              stars.push({ x: gx/IMG_SIZE, y: gy/IMG_SIZE, w: count });
+            }
+          }
+        }
+      }
+      starNorms = stars;
     }
 
-    window.addEventListener('resize', resizeCanvas, { passive: true });
-
-    /* ========= 星生成（静止） ========= */
-    let starField = null; // オフスクリーン
-    function redrawStatic() {
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
-
-      // オフスクリーン生成
+    /* =========================
+       正規化座標をビューポートに投影して⭐︎描画（オフスクリーン）
+       ========================= */
+    function renderStarField() {
+      if (!starNorms.length) return;
+      const w = canvas.width, h = canvas.height;
+      const size = Math.min(w, h);
       const off = document.createElement('canvas');
       off.width = w;
       off.height = h;
       const ox = off.getContext('2d');
 
-      // 背景（完全黒）
+      // 背景
       ox.fillStyle = '#000';
       ox.fillRect(0, 0, w, h);
 
-      // 中心・半径（円形モード）
-      const cx = w / 2;
-      const cy = h / 2;
-      const radius = Math.min(w, h) / 2 - 2; // 外周に少し余白
+      // 円形クリップ
+      ox.save();
+      ox.beginPath();
+      ox.arc(w/2, h/2, size/2, 0, Math.PI*2);
+      ox.clip();
 
-      // 帯の角度（ラジアン）
-      const ang = (BAND_ANGLE_DEG % 360) * Math.PI / 180;
-      const dirX = Math.cos(ang), dirY = Math.sin(ang);
+      // ⭐︎描画
+      ox.fillStyle = STAR_COLOR;
+      ox.textAlign = 'center';
+      ox.textBaseline = 'middle';
 
-      // 星の描画
-      ox.fillStyle = '#FFF';
-      for (let i = 0; i < STAR_COUNT; i++) {
-        let x, y;
+      const fontPx = Math.max(6, STAR_FONT_PX * (size / IMG_SIZE)); // サイズに追随
+      ox.font = `${fontPx}px serif`;
 
-        if (USE_CIRCLE) {
-          // 円内一様分布（極座標法）
-          const r = Math.sqrt(Math.random()) * radius;
-          const t = Math.random() * Math.PI * 2;
-          x = cx + r * Math.cos(t);
-          y = cy + r * Math.sin(t);
-        } else {
-          // 矩形一様
-          x = Math.random() * w;
-          y = Math.random() * h;
-        }
+      const offsetX = (w - size)/2;
+      const offsetY = (h - size)/2;
 
-        // 天の川バイアス：帯の中心線からの距離 d を評価
-        if (USE_MILKY_BAND) {
-          // 点(x,y)から帯直線への距離（符号なし）
-          const vx = x - cx, vy = y - cy;
-          const dist = Math.abs(vx * (-dirY) + vy * (dirX)); // 垂線距離に相当
-          const norm = USE_CIRCLE ? radius : Math.hypot(w, h);
-          const nd = dist / norm; // 正規化距離（0〜）
-          // 距離が小さいほど濃く（サイズや明度に反映）
-          var weight = Math.exp(- (nd*nd) / (2 * BAND_SIGMA*BAND_SIGMA)); // ガウス
-          // サイズ・不透明度に反映（擬似的な星等級）
-          const rCSS = STAR_MIN_RADIUS_CSS + (STAR_MAX_RADIUS_CSS - STAR_MIN_RADIUS_CSS) * (0.2 + 0.8 * weight);
-          ox.globalAlpha = 0.55 + 0.45 * weight;
-          drawDot(ox, x, y, rCSS);
-        } else {
-          ox.globalAlpha = 0.85;
-          const rCSS = STAR_MIN_RADIUS_CSS + Math.random() * (STAR_MAX_RADIUS_CSS - STAR_MIN_RADIUS_CSS);
-          drawDot(ox, x, y, rCSS);
-        }
+      for (let i=0;i<starNorms.length;i++){
+        const sx = offsetX + starNorms[i].x * size;
+        const sy = offsetY + starNorms[i].y * size;
+        ox.fillText(STAR_CHAR, sx, sy);
       }
 
-      // 円形の外側を黒でマスク（外周を円に）
-      if (USE_CIRCLE) {
-        ox.save();
-        ox.globalCompositeOperation = 'destination-in';
-        ox.beginPath();
-        ox.arc(cx, cy, radius, 0, Math.PI * 2);
-        ox.closePath();
-        ox.fill();
-        ox.restore();
-      }
-
+      ox.restore();
       starField = off;
-      // 最初のフレーム描画
+      // 一度描いておく
       ctx.clearRect(0, 0, w, h);
       ctx.drawImage(starField, 0, 0);
     }
 
-    function drawDot(ox, x, y, rCSS) {
-      // 1px級の鋭い点
-      ox.beginPath();
-      ox.arc(x, y, rCSS, 0, Math.PI * 2);
-      ox.fill();
-    }
-
-    /* ========= 流れ星（記号） ========= */
-    const meteors = [];
+    /* =========================
+       流れ星（記号）
+       ========================= */
     function spawnMeteor(options={}) {
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
+      const w = canvas.width;
+      const h = canvas.height;
 
-      // 端から飛び込む4方向から選ぶ
-      const side = Math.floor(Math.random() * 4); // 0:左,1:右,2:上,3:下
-      let x, y, vx, vy;
-      const speed = 300 + Math.random() * 300; // px/s
-      const life = 1.0 + Math.random() * 0.8;  // 秒
-      const char = STAR_CHARS[Math.floor(Math.random() * STAR_CHARS.length)];
-      // 色は #7F7F7F（基本） / #FFF（レア）
-      const rareColor = Math.random() < 0.15; // レアの中でも色差を少し
-      const color = options.color || (rareColor ? '#FFF' : '#7F7F7F');
-
-      if (side === 0) { x = -20; y = Math.random() * h; vx = speed; vy = (Math.random() - 0.5) * 150; }
-      else if (side === 1){ x = w+20; y = Math.random() * h; vx = -speed; vy = (Math.random() - 0.5) * 150; }
-      else if (side === 2){ x = Math.random() * w; y = -20; vx = (Math.random() - 0.5) * 150; vy = speed; }
-      else { x = Math.random() * w; y = h+20; vx = (Math.random() - 0.5) * 150; vy = -speed; }
-
-      meteors.push({
-        x, y, vx, vy,
-        life, ttl: life,
-        char, color,
-        size: 18 + Math.random() * 8 // 記号フォントサイズ(px)
-      });
-    }
-
-    function updateAndDrawMeteors(dt) {
-      // 背景（静止星）をまず貼る
-      if (starField) ctx.drawImage(starField, 0, 0);
-
-      ctx.save();
-      meteors.forEach((m, idx) => {
-        m.ttl -= dt;
-        m.x += m.vx * dt;
-        m.y += m.vy * dt;
-
-        const alpha = Math.max(0, Math.min(1, m.ttl / m.life));
-        // 軌跡（薄い線）
-        ctx.globalAlpha = 0.25 * alpha;
-        ctx.strokeStyle = m.color === '#7F7F7F' ? 'rgba(127,127,127,0.25)' : '#FFF';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(m.x - m.vx * 0.05, m.y - m.vy * 0.05);
-        ctx.lineTo(m.x, m.y);
-        ctx.stroke();
-
-        // 本体（記号）
-        ctx.globalAlpha = 0.85 * alpha;
-        ctx.fillStyle = m.color;
-        ctx.font = `${m.size}px serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(m.char, m.x, m.y);
-      });
-      ctx.restore();
-
-      // 消滅
-      for (let i = meteors.length - 1; i >= 0; i--) {
-        if (meteors[i].ttl <= 0) meteors.splice(i, 1);
-      }
-    }
-
-    /* ========= メインループ ========= */
-    let last = performance.now();
-    function frame(t) {
-      const w = canvas.clientWidth, h = canvas.clientHeight;
-      // クリア&静止星
-      ctx.clearRect(0, 0, w, h);
-      updateAndDrawMeteors((t - last) / 1000);
-      last = t;
-      requestAnimationFrame(frame);
-    }
-
-    // 1秒ごとに出現判定（象徴確率）
-    setInterval(() => {
-      if (Math.random() < PROB_BASE) spawnMeteor();           // 通常（#7F7F7F）
-      if (Math.random() < PROB_RARE) spawnMeteor({color:'#FFF'}); // レア（白く鋭い）
-      if (Math.random() < PROB_ULTRA) {                         // 超レア（交差）
-        spawnMeteor();
-        spawnMeteor();
-      }
-    }, METEOR_INTERVAL_MS);
-
-    // 初期化
-    resizeCanvas();
-    requestAnimationFrame(frame);
-  </script>
-</body>
-</html>
+      const side = Math.floor(Math.random() * 4); // 0:左,1:右,2:上
