@@ -6,80 +6,70 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
   html, body { margin:0; height:100%; background:#000; overflow:hidden; }
-  canvas#sky { position:fixed; inset:0; display:block; background:#000; z-index:0; pointer-events:none; }
-
-  /* 中央リンクは小さな⭐︎だけ（テキストなし） */
+  /* 背景の⭐︎を描くキャンバス */
+  #sky {
+    position: fixed; inset: 0; display: block; background: #000;
+    z-index: 0; pointer-events: none;
+  }
+  /* 中央リンク（そのまま） */
   .center {
-    position:relative; z-index:1; height:100%;
-    display:grid; place-items:center;
+    position: relative; z-index: 1; height: 100%;
+    display: grid; place-items: center;
   }
-  .links {
-    display:flex; gap:3.5em; align-items:center; justify-content:center;
-  }
+  .links { display: flex; gap: 4em; }
   .links a {
-    text-decoration:none; color:#7F7F7F;
-    font-style:italic; /* 既存方針を踏襲 */
-    -webkit-tap-highlight-color:rgba(255,255,255,0.1);
+    text-decoration: none; color: #7F7F7F;
+    font-size: 3.14159265359em; font-style: italic; letter-spacing: 0.01em;
+    -webkit-tap-highlight-color: rgba(255,255,255,0.1);
   }
-  .links a .starlink {
-    display:inline-block; line-height:1; user-select:none;
-    /* 画面サイズに追随して小さめに保つ */
-    font-size: min(3.0vw, 28px);
-  }
-  .links a:hover .starlink { text-decoration:underline; }
-  .links a:focus-visible { outline:2px dashed #7F7F7F; outline-offset:6px; }
+  .links a.femme { font-family: Futura, sans-serif; }
+  .links a.homme { font-family: Helvetica, Arial, sans-serif; }
+  .links a:hover { text-decoration: underline; }
+  .links a:focus-visible { outline: 2px dashed #7F7F7F; outline-offset: 6px; }
 </style>
 </head>
 <body>
   <canvas id="sky" aria-hidden="true"></canvas>
 
-  <!-- テキストは出さず、小さな⭐︎だけでリンク -->
   <div class="center">
     <nav class="links" aria-label="primary">
-      <a href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/2" target="_blank" rel="noopener" title="Femme">
-        <span class="starlink">⭐︎</span>
-      </a>
-      <a href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/1" target="_blank" rel="noopener" title="Homme">
-        <span class="starlink">⭐︎</span>
-      </a>
+      <a class="femme" href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/2" target="_blank" rel="noopener">Femme</a>
+      <a class="homme" href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/1" target="_blank" rel="noopener">Homme</a>
     </nav>
   </div>
 
 <script>
-/* =========================
-   画像→⭐︎ 座標・サイズ抽出
-   ========================= */
-const SOURCE_IMAGE = 'sky-610-mecca-1728.png'; // ←スクショのファイル名
-const IMG_SIZE = 1728;                         // Your Sky 出力サイズ
-const THRESH = 235;                            // 白判定 (R/G/B >= 235)
-const STEP = 2;                                // 走査間隔（軽量）
-const MIN_BLOB = 1;                            // 小さすぎるノイズ除外
-const MAX_BLOB = 100;                          // 大きすぎる塊除外（星雲等）
-const STAR_CHAR = '⭐︎';                        // 描画する記号
-const STAR_COLOR = '#FFF';                     // 星は白のみ
+/* ====== 画像→⭐︎ 座標抽出設定 ====== */
+/* GitHubのRaw画像URLを入れてください */
+const SOURCE_IMAGE = 'https://raw.githubusercontent.com/USER/REPO/BRANCH/path/sky-610-mecca-1728.png';
+const IMG_SIZE = 1728;          // スクショの一辺（px）
+const THRESH = 235;             // 白判定しきい値 (R,G,B>=235)
+const STEP = 2;                 // 走査間隔（2〜3が軽量）
+const MIN_BLOB = 1;             // 小さすぎる塊の除外
+const MAX_BLOB = 100;           // 大きすぎる塊の除外（星雲などを弾く）
+const STAR_CHAR = '⭐︎';         // 背景はこの記号で再現
+const STAR_COLOR = '#FFF';      // 白のみ
 
 const canvas = document.getElementById('sky');
 const ctx = canvas.getContext('2d');
-let starNorms = [];     // 正規化座標＆重み [{x,y,w}]
-let starField = null;   // オフスクリーンに固定描画
-const meteors = [];     // 流れ星（任意：必要なら後で足せます）
+let starNorms = [];   // {x:0..1, y:0..1, t:0..1(大きさ比)}
 
-function fitCanvas() {
+function fit() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  renderStarField();
+  drawStars();
 }
-window.addEventListener('resize', fitCanvas, { passive:true });
+window.addEventListener('resize', fit, { passive:true });
 
-(async function init(){
-  fitCanvas();
-  await extractStarsFromImage();
-  renderStarField();
-})();
+(async function start(){
+  fit();
+  await extractStars();
+  drawStars();
+})().catch(err => console.error('star build error:', err));
 
-/* 画像の白い点をクラスタリングして重心と面積を取得 */
-async function extractStarsFromImage() {
+async function extractStars(){
   const img = await loadImage(SOURCE_IMAGE);
+
   const off = document.createElement('canvas');
   off.width = IMG_SIZE; off.height = IMG_SIZE;
   const ox = off.getContext('2d');
@@ -89,21 +79,22 @@ async function extractStarsFromImage() {
   const src = ox.getImageData(0, 0, IMG_SIZE, IMG_SIZE);
   const mask = new Uint8Array(IMG_SIZE * IMG_SIZE);
 
+  // 円の内側だけ白い点を拾う
   for (let y=0; y<IMG_SIZE; y+=STEP){
     const dy = y - cy, dy2 = dy*dy;
     for (let x=0; x<IMG_SIZE; x+=STEP){
       const dx = x - cx;
-      if (dx*dx + dy2 > R*R) continue; // 円外は無視
+      if (dx*dx + dy2 > R*R) continue;
       const i = (y*IMG_SIZE + x) * 4;
       const r = src.data[i], g = src.data[i+1], b = src.data[i+2];
       if (r>=THRESH && g>=THRESH && b>=THRESH) mask[y*IMG_SIZE + x] = 1;
     }
   }
 
-  // 連結成分ラベリング (BFS on STEPグリッド)
+  // 連結成分で重心と面積（=明るさの代用）を取る
   const visited = new Uint8Array(mask.length);
-  const stars = [];
   const qx = [], qy = [];
+  const stars = [];
 
   for (let y0=0; y0<IMG_SIZE; y0+=STEP){
     for (let x0=0; x0<IMG_SIZE; x0+=STEP){
@@ -132,7 +123,7 @@ async function extractStarsFromImage() {
       }
 
       if (count>=MIN_BLOB && count<=MAX_BLOB){
-        const gx = sumX / count, gy = sumY / count;
+        const gx = sumX/count, gy = sumY/count;
         const dx = gx - cx, dy = gy - cy;
         if (dx*dx + dy*dy <= (R-2)*(R-2)) {
           stars.push({ x: gx/IMG_SIZE, y: gy/IMG_SIZE, w: count });
@@ -141,78 +132,48 @@ async function extractStarsFromImage() {
     }
   }
 
-  // 面積のレンジを測って、⭐︎サイズの比率に反映
+  // 面積→サイズ比 0..1
   const wMin = Math.min(...stars.map(s=>s.w));
   const wMax = Math.max(...stars.map(s=>s.w));
-  // 安定化用オフセット
-  const eps = 0.0001;
-  starNorms = stars.map(s=>{
-    const t = (s.w - wMin) / Math.max(eps, (wMax - wMin)); // 0..1
-    return { x:s.x, y:s.y, w:s.w, t };
-  });
-
-  console.log(`Stars detected: ${starNorms.length}, blob range: [${wMin}, ${wMax}]`);
+  const span = Math.max(1, wMax - wMin);
+  starNorms = stars.map(s => ({ x:s.x, y:s.y, t:(s.w - wMin)/span }));
+  console.log(`Detected stars: ${starNorms.length}`);
 }
 
-/* 正規化座標をビューポートに投影し、⭐︎を等級っぽくサイズ出しして固定描画 */
-function renderStarField() {
+function drawStars(){
   if (!starNorms.length) return;
   const w = canvas.width, h = canvas.height;
-  const size = Math.min(w, h);               // 正円でフィット
-  const ox = new OffscreenCanvas ? new OffscreenCanvas(w, h) : document.createElement('canvas');
-  ox.width = w; ox.height = h;
-  const octx = ox.getContext('2d');
+  const size = Math.min(w, h);
+  const offX = (w - size)/2, offY = (h - size)/2;
 
-  // 背景
-  octx.fillStyle = '#000';
-  octx.fillRect(0, 0, w, h);
-
+  ctx.clearRect(0,0,w,h);
   // 円形クリップ
-  octx.save();
-  octx.beginPath();
-  octx.arc(w/2, h/2, size/2, 0, Math.PI*2);
-  octx.clip();
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(w/2, h/2, size/2, 0, Math.PI*2);
+  ctx.clip();
 
-  // ⭐︎のサイズは「最小6px〜最大14px」を目安に、blob面積に比例
+  // ⭐︎サイズ：最小6px〜最大14px（画面に比例）
   const pxMin = 6 * (size/IMG_SIZE);
   const pxMax = 14 * (size/IMG_SIZE);
 
-  octx.fillStyle = STAR_COLOR;
-  octx.textAlign = 'center';
-  octx.textBaseline = 'middle';
+  ctx.fillStyle = STAR_COLOR;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
 
-  const offX = (w - size)/2, offY = (h - size)/2;
-
-  for (let i=0;i<starNorms.length;i++){
+  for (let i=0; i<starNorms.length; i++){
     const s = starNorms[i];
-    const fs = pxMin + (pxMax - pxMin) * Math.pow(s.t, 0.65); // 明るめを少し強調
-    octx.font = `${fs}px serif`;
-    const sx = offX + s.x * size;
-    const sy = offY + s.y * size;
-    octx.fillText(STAR_CHAR, sx, sy);
+    const fs = pxMin + (pxMax - pxMin) * Math.pow(s.t, 0.65);
+    ctx.font = `${fs}px serif`;
+    ctx.fillText(STAR_CHAR, offX + s.x*size, offY + s.y*size);
   }
-
-  octx.restore();
-
-  // 画面へ転送
-  if (ox.transferToImageBitmap) {
-    const bmp = ox.transferToImageBitmap();
-    // 一度クリアして貼る
-    ctx.clearRect(0,0,w,h);
-    createImageBitmap(bmp).then(()=>{ ctx.drawImage(bmp,0,0); });
-    starField = bmp;
-  } else {
-    starField = ox;
-    ctx.clearRect(0,0,w,h);
-    ctx.drawImage(starField, 0, 0);
-  }
+  ctx.restore();
 }
 
-/* 画像ローダ */
 function loadImage(src){
   return new Promise((res, rej)=>{
     const img = new Image();
-    img.crossOrigin = 'anonymous';
+    img.crossOrigin = 'anonymous'; // GitHub Raw等から読み込むため
     img.onload = ()=>res(img);
     img.onerror = rej;
     img.src = src;
