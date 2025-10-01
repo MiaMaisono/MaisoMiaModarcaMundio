@@ -1,0 +1,23 @@
+[
+  {
+    "id": "pf-0001",
+    "title": "Signature #001",
+    "style": "jewelry",
+    "size": "square",
+    "colors": ["white","gray"],
+    "thumb": "img/pf/pf-0001.webp",
+    "original": "https://archive.org/download/xxxxxxxx/FILE-0001.jpg",
+    "order": 1
+  },
+  {
+    "id": "pf-0002",
+    "title": "Signature #002",
+    "style": "bag",
+    "size": "tall",
+    "colors": ["black","red"],
+    "thumb": "img/pf/pf-0002.webp",
+    "original": "https://archive.org/download/xxxxxxxx/FILE-0002.jpg",
+    "order": 2
+  }
+  /* ← この要領で 144件 追加 */
+]
