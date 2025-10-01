@@ -1,41 +1,45 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>#i</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background-color: #000;
-      height: 100vh;
-      width: 100vw;
-      font-family: Georgia, serif;
-      color: #7F7F7F;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    a.center-link {
-      color: #7F7F7F;
-      text-decoration: none;
-      font-size: 19px;
-      line-height: 1.2;
-      text-align: center;
-      padding: 8px 12px;       /* タップしやすい余白 */
-      border: 1px solid transparent;
-    }
-    a.center-link:hover,
-    a.center-link:focus {
-      border-color: #7F7F7F;   /* うっすら枠でホバー可視化 */
-      outline: none;
-    }
+    :root { --bg:#000; --fg:#7F7F7F; --white:#FFF; }
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:Georgia,serif;}
+    .wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px;box-sizing:border-box}
+    .item{display:flex;flex-direction:column;align-items:center;gap:8px}
+    .link{color:var(--fg);text-decoration:none;border:1px solid var(--fg);padding:10px 16px}
+    .link:hover{color:var(--white);border-color:var(--white)}
+    .sub{opacity:.85;font-size:14px}
   </style>
 </head>
 <body>
-  <!-- クリック/タップでギャラリーへ -->
-  <a class="center-link" href="Inventarium.html">
-    ineffabilis / ineffable / ineffabile / inefavlo
-  </a>
+  <main class="wrap">
+    <!-- フリーブティック 144 -->
+    <div class="item">
+      <a class="link" href="boutique.html">ineffabilis / ineffable / ineffabile / inefavlo</a>
+      <div class="sub">フリーブティック（144）</div>
+    </div>
+
+    <!-- Archive.org 1,728（URLは後で差し替え） -->
+    <div class="item">
+      <a class="link" id="archiveLink" href="#" target="_blank" rel="noopener">Archive.org / ϻiapolVo</a>
+      <div class="sub">1,728（12×12×12）</div>
+    </div>
+
+    <!-- 全デッサン 約12,000（図形文字のプレースホルダ） -->
+    <div class="item">
+      <!-- ▦ は「多タイル」のニュアンス。必要なら他の図形に入替え可 -->
+      <div class="link" style="cursor:default">▦　全デッサン（約12,000）</div>
+      <div class="sub">後日：適切な公開先にリンク</div>
+    </div>
+  </main>
+
+  <script>
+    // ← 後でここに実URLを代入してください（例：archive.org のコレクションURL）
+    const ARCHIVE_URL = ""; // 例）"https://archive.org/details/xxxx"
+    if(ARCHIVE_URL) document.getElementById('archiveLink').href = ARCHIVE_URL;
+  </script>
 </body>
 </html>
