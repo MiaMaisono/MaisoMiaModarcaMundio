@@ -31,12 +31,28 @@
     /* ───────── 四隅 UI（アイコン→展開） ───────── */
     .ctrl{position:fixed;z-index:10;display:flex;gap:8px;align-items:center}
     .TL{top:8px;left:8px}
+　　 /* === 右上サイズメニュー：右端に寄せて、左へ展開させる（追記するだけ） === */
 　　 .TR{top:8px;
-        right:8px;
-        display:flex;
-        flex-direction:row-reverse; /* ◇を右端に、パネルは左へ並ぶ */
-        gap:8px;
-        align-items:center;}    
+  　　　　right:8px;
+　　　　  display:flex;
+　　　　  flex-direction:row-reverse;   /* ◇を右端、パネルは左側へ */
+　　　　  gap:8px;
+　　　　  align-items:center;}
+　　　　　#sizePanel{
+　　　　  flex-direction:row-reverse;   /* ■▮▯ が左向きに並ぶ */
+ 　　　　 justify-content:flex-end;}
+　　　　/* 開閉アニメ：右→左へスライドして現れる */
+　　　　.TR .panel.hidden{
+　　　　  opacity:0;
+　　　　  pointer-events:none;
+　　　　  transform:translateX(8px);
+　　　　  transition:opacity var(--speed), transform var(--speed);}
+　　　　.TR .panel.show{
+　　　　  opacity:1;
+　　　　  transform:translateX(0);
+　　　　  transition:opacity var(--speed), transform var(--speed);}
+　　　　/* ◇の右側の微小な空きが気になる場合の詰め（任意） */
+　　　　.TR .icon-btn{ padding-right:2px; }   
     .BL{bottom:8px;left:8px}
     .BR{bottom:8px;right:8px}
 
