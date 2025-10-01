@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>ϻiapolVo — Free Boutique (144)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#000; --fg:#7F7F7F; --white:#FFF;
+      --gap:12px; --phiInv:0.618033988749; /* 画像はタイルの 1/φ */
+    }
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:Georgia,serif;}
+    a{color:inherit;text-decoration:none}
+
+    /* 画面全体 */
+    .stage{min-height:100vh;display:flex;flex-direction:column}
+
+    /* コントロール（四隅） */
+    .ctrl{position:fixed;z-index:10;padding:10px}
+    .TL{top:0;left:0} .TR{top:0;right:0} .BL{bottom:0;left:0} .BR{bottom:0;right:0}
+    .panel{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:flex-start;background:rgba(0,0,0,.7);border:1px solid var(--fg);padding:8px}
+    .btn{background:#111;color:var(--white);border:1px solid var(--fg);padding:6px 10px;cursor:pointer;font-family:Georgia,serif}
+    .btn[data-active="true"]{border-color:var(--white);color:var(--white)}
+    .chip{background:#111;color:var(--white);border:1px solid var(--fg);padding:4px 8px;cursor:pointer}
+    .chip[data-active="true"]{border-color:var(--white);color:var(--white)}
+
+    /* サイズアイコン（図形） */
+    .icon{display:inline-block;width:22px;height:22px;border:1px solid var(--fg);background:#111}
+    .icon.square{width:18px;height:18px}
+    .icon.tall{width:14px;height:20px}
+    .icon.wide{width:20px;height:12px}
+    .icon[data-active="true"]{border-color:var(--white);box-shadow:0 0 0 1px var(--white) inset}
+
+    /* グリッド：下寄せで“下から上へ”埋まる見え方 */
+    .wrap{flex:1;display:flex;align-items:flex-end;justify-content:center;padding:72px 12px} /* 四隅パネルぶんの余白 */
+    .grid{width:100%;max-width:1400px;display:grid;gap:var(--gap);
+          grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+          align-content:end;} /* ★下寄せ */
+    .card{background:var(--fg);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+    .card img{max-width:calc(100%*var(--phiInv));max-height:calc(100%*var(--phiInv));display:block;object-fit:contain}
+
+    /* フッター（戻る） */
+    .foot{display:flex;justify-content:center;align-items:center;padding:20px}
+    .brand{border:1px solid var(--fg);padding:8px 12px}
+    .brand:hover{color:var(--white);border-color:var(--white)}
+  </style>
+</head>
+<body>
+  <div class="stage">
+
+    <!-- 左上：スタイル -->
+    <div class="ctrl TL">
+      <div class="panel" id="stylePanel" aria-label="スタイル">
+        <button class="btn" data-style="all" data-active="true">All</button>
+        <button class="btn" data-style="jewelry">ジュエリー</button>
+        <button class="btn" data-style="bag">バッグ</button>
+        <button class="btn" data-style="wear">ウェア</button>
+        <button class="btn" data-style="pattern">パターン</button>
+      </div>
+    </div>
+
+    <!-- 右上：サイズ（図形ボタン） -->
+    <div class="ctrl TR">
+      <div class="panel" id="sizePanel" aria-label="サイズ">
+        <button class="icon tall"   data-size="tall"   title="縦長"></button>
+        <button class="icon square" data-size="square" title="正方"></button>
+        <button class="icon wide"   data-size="wide"   title="横長"></button>
+      </div>
+    </div>
+
+    <!-- 左下：カラー絞り込み -->
+    <div class="ctrl BL">
+      <div class="panel" id="colorPanel" aria-label="カラー">
+        <!-- 8色（複数選択可） -->
+        <button class="chip" data-color="yellow">Yellow</button>
+        <button class="chip" data-color="pink">Pink</button>
+        <button class="chip" data-color="white">White</button>
+        <button class="chip" data-color="orange">Orange</button>
+        <button class="chip" data-color="brown">Brown</button>
+        <button class="chip" data-color="red">Red</button>
+        <button class="chip" data-color="black">Black</button>
+        <button class="chip" data-color="gray">Gray</button>
+      </div>
+    </div>
+
+    <!-- 右下：ソート（ランダムのみ） -->
+    <div class="ctrl BR">
+      <div class="panel" id="sortPanel" aria-label="ソート">
+        <button class="btn" id="sortRandom">Random</button>
+      </div>
+    </div>
+
+    <!-- 一覧（下から上へ埋まる） -->
+    <main class="wrap">
+      <section id="grid" class="grid" aria-live="polite"></section>
+    </main>
+
+    <!-- フッター：トップへ戻る -->
+    <footer class="foot">
+      <a class="brand" href="https://abcdefghijklnopqrstuw.xyz">ϻiapolVo</a>
+    </footer>
+  </div>
+
+  <script>
+    /* ===== 設定 ===== */
+    const DATA_URL = 'products.json';   // 144点のデータ
+    const GRID = document.getElementById('grid');
+
+    /* ===== 状態 ===== */
+    let items = [];             // 全144
+    let styleSel = 'all';       // jewelry/bag/wear/pattern/all
+    let sizeSel  = null;        // tall/square/wide/null
+    let colorsSel = new Set();  // 複数可
+    let randSeed = 0;           // 疑似ランダムの種
+
+    /* ===== ユーティリティ ===== */
+    function shuffle(a, seed=0){
+      const r = a.slice();
+      let s = seed || Date.now();
+      for(let i=r.length-1;i>0;i--){
+        // xorshift-like
+        s ^= s << 13; s ^= s >> 17; s ^= s << 5; s >>>= 0;
+        const j = s % (i+1);
+        [r[i], r[j]] = [r[j], r[i]];
+      }
+      return r;
+    }
+
+    function passStyle(it){ return (styleSel==='all') || (it.style===styleSel); }
+    function passSize(it){ return !sizeSel || (it.size===sizeSel); }
+    function passColor(it){
+      if(colorsSel.size===0) return true;
+      if(!Array.isArray(it.colors)) return false;
+      for(const c of it.colors){ if(colorsSel.has(c)) return true; }
+      return false;
+    }
+
+    function card(it){
+      const el = document.createElement('article');
+      el.className = 'card';
+      const img = document.createElement('img');
+      img.src = it.thumb; img.alt = it.title || 'Artwork';
+      img.loading='lazy'; img.decoding='async';
+      el.appendChild(img);
+      return el;
+    }
+
+    function render(){
+      const filtered = items.filter(it => passStyle(it)&&passSize(it)&&passColor(it));
+      const listed = randSeed ? shuffle(filtered, randSeed) : filtered;
+      GRID.innerHTML = '';
+      // 下寄せ＋一気に描画（144なので軽い）
+      for(const it of listed){ GRID.appendChild(card(it)); }
+    }
+
+    /* ===== イベント（四隅UI） ===== */
+    // スタイル
+    document.getElementById('stylePanel').addEventListener('click', e=>{
+      const b = e.target.closest('.btn'); if(!b) return;
+      styleSel = b.dataset.style;
+      for(const el of e.currentTarget.querySelectorAll('.btn')) el.dataset.active = (el===b);
+      render();
+    });
+
+    // サイズ（図形）
+    document.getElementById('sizePanel').addEventListener('click', e=>{
+      const b = e.target.closest('.icon'); if(!b) return;
+      const prev = e.currentTarget.querySelector('[data-active="true"]');
+      if(prev===b){ b.removeAttribute('data-active'); sizeSel=null; }
+      else{
+        if(prev) prev.removeAttribute('data-active');
+        b.dataset.active = true; sizeSel = b.dataset.size;
+      }
+      render();
+    });
+
+    // カラー（複数選択）
+    document.getElementById('colorPanel').addEventListener('click', e=>{
+      const c = e.target.closest('.chip'); if(!c) return;
+      const name = c.dataset.color;
+      if(c.dataset.active==="true"){ c.dataset.active="false"; colorsSel.delete(name); }
+      else{ c.dataset.active="true"; colorsSel.add(name); }
+      render();
+    });
+
+    // ランダム
+    document.getElementById('sortPanel').addEventListener('click', e=>{
+      const b = e.target.closest('#sortRandom'); if(!b) return;
+      randSeed = (randSeed?0:Date.now()); // トグル
+      b.dataset.active = (randSeed? "true":"false");
+      render();
+    });
+
+    /* ===== データ読込 ===== */
+    (async () => {
+      const res = await fetch(DATA_URL);
+      const data = await res.json();
+      // 144想定。orderで安定並び → Randomトグルでシャッフル
+      items = data.sort((a,b)=>(a.order||0)-(b.order||0));
+      render();
+    })();
+  </script>
+</body>
+</html>
