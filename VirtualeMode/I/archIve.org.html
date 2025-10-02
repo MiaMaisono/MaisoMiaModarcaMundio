@@ -17,6 +17,11 @@
       --barH:36px; --topOffset:12px; --bottomOffset:28px;
     }
     html,body{ margin:0; height:100%; background:var(--bg); color:var(--grey); font-family:Georgia,serif; }
+          body{border-radius:26.5px;
+           outline:12px solid #7f7f7f;       /* Græy */
+           box-shadow:0 0 0 0px #fff inset;  /* 内側白枠（不要なら 0px のまま）*/
+           overflow:hidden;
+
     .stage{ position:fixed; inset:0; display:flex; flex-direction:column }
 
     .topbar,.bottombar{
@@ -55,10 +60,6 @@
       object-fit:contain; display:block; margin:auto;
       /* ヒント：初期描画優先 */
       image-rendering:auto;
-      body{border-radius:26.5px;
-           outline:12px solid #7f7f7f;       /* Græy */
-           box-shadow:0 0 0 0px #fff inset;  /* 内側白枠（不要なら 0px のまま）*/
-           overflow:hidden;
           }
   </style>
 </head>
