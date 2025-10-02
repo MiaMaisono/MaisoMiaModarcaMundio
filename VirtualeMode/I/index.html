@@ -1,46 +1,62 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <title>#i</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root { --bg:#000; --fg:#7F7F7F; --white:#FFF; }
-    html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:Georgia,serif;}
-    .wrap{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;padding:24px;box-sizing:border-box}
-    .item{display:flex;flex-direction:column;align-items:center;gap:8px}
-    .link:hover{color:var(--white);border-color:var(--white)}
-    .sub{opacity:.85;font-size:12px}
-    body {margin: 0; height: 100vh;background: #000;
-          border-radius: 26.5px;
-          outline: 12px solid #7f7f7f;      /* Græy */
-          box-shadow: 0 0 0 0px #fff inset; /* 内側白枠 */
-          overflow: hidden;}
+
+    html,body{
+      margin:0;height:100%;
+      background:var(--bg);color:var(--fg);
+      font-family:Georgia,serif;
+    }
+
+    /* 角丸・外周*/
+    body{
+      border-radius:26.5px;
+      outline:12px solid #7f7f7f;       /* Græy */
+      box-shadow:0 0 0 0px #fff inset;  /* 内側白枠*/
+      overflow:hidden;
+    }
+
+    /*リンクの既定色＆visited色*/
+    a{ color:var(--fg); text-decoration:none; -webkit-tap-highlight-color:transparent; }
+    a:visited{ color:var(--fg); }
+    a:hover, a:focus, a:active{ color:var(--white); outline:none; }
+
+    .wrap{
+      min-height:100vh;display:flex;flex-direction:column;
+      align-items:center;justify-content:center;gap:28px;
+      padding:24px;box-sizing:border-box;
+    }
+    .item{ display:flex;flex-direction:column;align-items:center;gap:8px; }
+
+    /* .linkクラスは見た目を足さない（囲いを作らない） */
+    .link{ display:inline-block; }
+
+    .sub{ opacity:.85;font-size:12px; }
   </style>
 </head>
 <body>
   <main class="wrap">
-    <!-- フリーブティック 144 -->
     <div class="item">
       <a class="link" href="boutique.html">ineffabilis / ineffable / ineffabile / inefavlo</a>
     </div>
 
-    <!-- Archive.org 1,728（URLは後で差し替え） -->
     <div class="item">
       <a class="link" id="archiveLink" href="#" target="_blank" rel="noopener">Archive.org / ϻiapolVo</a>
     </div>
 
-    <!-- 全デッサン 約12,000（図形文字のプレースホルダ） -->
     <div class="item">
-      <!-- ▦ は「多タイル」のニュアンス。必要なら他の図形に入替え可 -->
-      <div class="link" style="cursor:default">▦</div>
+      <span class="link" style="cursor:default">▦</span>
     </div>
   </main>
 
   <script>
-    // ← 後でここに実URLを代入してください（例：archive.org のコレクションURL）
-    const ARCHIVE_URL = "Inventarium.html"; // 例）"https://archive.org/details/xxxx"
-    if(ARCHIVE_URL) document.getElementById('archiveLink').href = ARCHIVE_URL;
+    const ARCHIVE_URL = "Inventarium.html";
+    if (ARCHIVE_URL) document.getElementById('archiveLink').href = ARCHIVE_URL;
   </script>
 </body>
 </html>
