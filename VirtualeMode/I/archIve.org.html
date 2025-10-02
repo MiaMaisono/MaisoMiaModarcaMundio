@@ -14,12 +14,13 @@
       --phiInv:0.618033988749;          /* 画像=タイルの 1/φ */
       --barH:36px; --topOffset:12px; --bottomOffset:28px;
 
-      /* ← ここで角丸と枠の太さを調整 */
-      --frameR:26.5px;                  /* 角丸半径 */
-      --frameGrey:1px;                 /* Græy 枠の太さ */
-      --frameWhite:0px;                 /* 白枠の太さ（0で非表示） */
-    }
-
+     /* 角丸・外周*/
+    body{
+      border-radius:26.5px;
+      outline:12px solid #7f7f7f;       /* Græy */
+      box-shadow:0 0 0 0px #fff inset;  /* 内側白枠*/
+      overflow:hidden;
+    
     html,body{
       margin:0;height:100%;
       background:var(--bg);color:var(--grey);
