@@ -2,44 +2,21 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>1,728</title>
+  <title>Inventarium 1728</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- 高速化：事前にHTTP接続を張る -->
   <link rel="preconnect" href="https://archive.org" crossorigin>
   <link rel="preconnect" href="https://iiif.archivelab.org" crossorigin>
 
   <style>
     :root{
       --bg:#000; --grey:#7F7F7F; --white:#FFF;
-      --gap:1.414213562373px;           /* タイル間は黒 */
-      --phiInv:0.618033988749;          /* 画像=タイルの 1/φ */
+      --gap:1.414213562373px;            /* タイル間は黒が覗く */
+      --phiInv:0.618033988749;           /* 画像 = タイルの 1/φ */
       --barH:36px; --topOffset:12px; --bottomOffset:28px;
-
-     /* 角丸・外周*/
-    body{
-      border-radius:26.5px;
-      outline:12px solid #7f7f7f;       /* Græy */
-      box-shadow:0 0 0 0px #fff inset;  /* 内側白枠*/
-      overflow:hidden;
-    
-    html,body{
-      margin:0;height:100%;
-      background:var(--bg);color:var(--grey);
-      font-family:Georgia,serif;
     }
-
-    /* 画面の角丸フレーム（擬似要素） */
-    body{ overflow:hidden; }
-    body::before{
-      content:"";
-      position:fixed; inset:0;
-      border-radius:var(--frameR);
-      /* 内側に 2 本のリング：Græy と白。白を消したい時は --frameWhite:0 に */
-      box-shadow:
-        0 0 0 var(--frameGrey) #7f7f7f inset,
-        0 0 0 var(--frameWhite) #fff inset;
-      pointer-events:none; /* クリックに干渉しない */
-    }
-
+    html,body{ margin:0; height:100%; background:var(--bg); color:var(--grey); font-family:Georgia,serif; }
     .stage{ position:fixed; inset:0; display:flex; flex-direction:column }
 
     .topbar,.bottombar{
@@ -62,7 +39,6 @@
       padding-left:8px; padding-right:8px; box-sizing:border-box;
       display:flex; align-items:center; justify-content:center;
     }
-
     .grid{
       width:100%; height:100%;
       display:grid; gap:var(--gap);
@@ -77,8 +53,13 @@
       max-width:  calc(100% * var(--phiInv));
       max-height: calc(100% * var(--phiInv));
       object-fit:contain; display:block; margin:auto;
+      /* ヒント：初期描画優先 */
       image-rendering:auto;
-    }
+      body{border-radius:26.5px;
+           outline:12px solid #7f7f7f;       /* Græy */
+           box-shadow:0 0 0 0px #fff inset;  /* 内側白枠（不要なら 0px のまま）*/
+           overflow:hidden;
+          }
   </style>
 </head>
 <body>
@@ -94,32 +75,38 @@
     const ARCHIVE_DETAIL_URL = "https://archive.org/details/miapolvo";
     const PREV_PAGE_URL = "./";
 
-    const TOTAL_TARGET = 1728;
-    const PAGES = 12, PER_PAGE = TOTAL_TARGET / PAGES;
-    const THUMB_SIDE = 256;
+    const TOTAL_TARGET = 1728;                  // 12ページ × 144
+    const PAGES = 12, PER_PAGE = TOTAL_TARGET / PAGES;  // 144
+    const THUMB_SIDE = 256;                     // サムネ生成サイズ（IIIF）。128/192/256/320等好みで
 
+    // 144セル候補（列, 行）
     const CANDS = [[1,144],[2,72],[3,48],[4,36],[6,24],[8,18],[9,16],[12,12],[16,9],[18,8],[24,6],[36,4],[48,3],[72,2],[144,1]];
 
     const gridEl  = document.getElementById('grid');
     const nextBtn = document.getElementById('nextBtn');
     const prevBtn = document.getElementById('prevBtn');
 
-    let displayList = [];
+    let displayList = [];  // {orig, thumb} の配列
     let pageIndex = 0;
 
+    /* 画像リスト取得（拡張子で判定） */
     async function fetchList(id){
       const res = await fetch(`https://archive.org/metadata/${encodeURIComponent(id)}`);
       if(!res.ok) throw new Error("metadata fetch failed");
       const data = await res.json();
-      const exts = new Set(["jpg","jpeg","png","gif","webp"]);
+
+      const exts = new Set(["jpg","jpeg","png","gif","webp"]); // 表示優先で絞る（tif/jp2は除外）
       const names = (data.files||[])
         .map(f => f?.name || "")
         .filter(name => {
           const m = name.toLowerCase().match(/\.([a-z0-9]+)$/);
           return m && exts.has(m[1]);
         });
+
+      // 各ファイルの元画像URLと IIIF サムネURL
       return names.map(name => {
         const orig  = `https://archive.org/download/${id}/${encodeURIComponent(name)}`;
+        // IIIF: https://iiif.archivelab.org/iiif/ITEM$NAME/full/!W,H/0/default.jpg
         const thumb = `https://iiif.archivelab.org/iiif/${id}$${encodeURIComponent(name)}/full/!${THUMB_SIDE},${THUMB_SIDE}/0/default.jpg`;
         return { orig, thumb };
       });
@@ -138,32 +125,48 @@
       const [cols, rows]=bestGrid();
       gridEl.style.gridTemplateColumns=`repeat(${cols},1fr)`;
       gridEl.style.gridTemplateRows=`repeat(${rows},1fr)`;
-      return cols*rows;
+      return cols*rows; // 144
     }
 
     function renderPage(){
       gridEl.innerHTML = "";
       const total = applyGrid();
+
       const start = pageIndex * PER_PAGE;
-      const slice = displayList.slice(start, start + PER_PAGE);
+      const slice = displayList.slice(start, start + PER_PAGE); // 144件（未満ならその分）
+
+      // 144枚は「即時に src をセット」してブラウザのHTTP/2並列に任せる（最速）
+      // フォールバック：thumbエラー時はorigへ
       for(let i=0; i<total; i++){
         const cell = document.createElement('div');
         cell.className = 'cell';
+
         if(i < slice.length){
           const {orig, thumb} = slice[i];
           const img = document.createElement('img');
-          img.width = 256; img.height = 256;
-          img.decoding = "async"; img.loading = "eager"; img.fetchPriority = "high";
-          img.onerror = () => { if(img.src !== orig) img.src = orig; };
+          img.width = 256;  // レイアウト安定用ヒント（実サイズに拘らない）
+          img.height = 256;
+          img.decoding = "async";
+          img.loading  = "eager";        // 初回は積極的に
+          img.fetchPriority = "high";    // 体感を上げる
+
+          img.onerror = () => { if(img.src !== orig) img.src = orig; }; // 失敗時に元画像へ
           img.src = thumb;
+
           cell.appendChild(img);
         }
         gridEl.appendChild(cell);
       }
     }
 
-    function nextPage(){ if(pageIndex >= PAGES-1) window.location.href = ARCHIVE_DETAIL_URL; else { pageIndex++; renderPage(); } }
-    function prevPage(){ if(pageIndex <= 0) window.location.href = PREV_PAGE_URL; else { pageIndex--; renderPage(); } }
+    function nextPage(){
+      if(pageIndex >= PAGES-1) window.location.href = ARCHIVE_DETAIL_URL;
+      else { pageIndex++; renderPage(); }
+    }
+    function prevPage(){
+      if(pageIndex <= 0) window.location.href = PREV_PAGE_URL;
+      else { pageIndex--; renderPage(); }
+    }
 
     nextBtn.addEventListener('click', nextPage);
     prevBtn.addEventListener('click', prevPage);
@@ -172,10 +175,16 @@
     (async () => {
       try{
         const all = await fetchList(ARCHIVE_ID);
+        // 1,728件ぶん（未満ならその分）をランダム選抜
         displayList = shuffle(all).slice(0, TOTAL_TARGET);
-      }catch(e){ console.error(e); displayList = []; }
-      renderPage();
+      }catch(e){
+        console.error(e);
+        displayList = [];
+      }
+      renderPage();  // 初回144枚は即時ロード
     })();
   </script>
 </body>
 </html>
+
+こちらが四隅のGræy円枠が反映されていません
