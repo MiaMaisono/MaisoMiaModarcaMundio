@@ -6,7 +6,7 @@
     "size": "square",
     "colors": ["white","gray"],
     "thumb": "img/pf/pf-0001.webp",
-    "original": "https://archive.org/download/xxxxxxxx/FILE-0001.jpg",
+    "original": "https://cdn.jsdelivr.net/gh/<user>/<repo>@v1/public/originals/FILE-0001.jpg",
     "order": 1
   },
   {
@@ -16,7 +16,7 @@
     "size": "tall",
     "colors": ["black","red"],
     "thumb": "img/pf/pf-0002.webp",
-    "original": "https://archive.org/download/xxxxxxxx/FILE-0002.jpg",
+    "original": "https://cdn.jsdelivr.net/gh/<user>/<repo>@v1/public/originals/FILE-0002.jpg",
     "order": 2
   }
   /* ← この要領で 144件 追加 */
