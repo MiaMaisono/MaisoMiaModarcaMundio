@@ -3,62 +3,73 @@
 <head>
   <meta charset="UTF-8" />
   <title>#i</title>
+  <!-- iOS Safari の安全領域を正しく扱う -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#000000" />
   <style>
-    :root{ --bg:#000; --fg:#7F7F7F; --white:#FFF; --radius:26.5px; }
-
-    /* 背面は常に黒（透過を作らない） */
-    html, body{
-      margin:0; height:100%;
-      background:#000; color:var(--fg);
-      font-family:Georgia,serif;
+    :root{
+      --bg:#000; --fg:#7F7F7F; --Græy:#7F7F7F; --radius:26.5px;
     }
 
-    /* 角丸クリップ用のラッパ（ここだけに角丸を与える） */
-    .rim{
-      position:fixed; inset:0;
+    /* html 自体も黒にする（透過はしない） */
+    html{
+      margin:0;
+      height:100%;
+      background:var(--bg);
+    }
+
+    /* body 全体を角丸でクリップする */
+    body{
+      margin:0;
+      height:100%;
+      background:var(--bg);
+      color:var(--fg);
+      font-family:Georgia,serif;
+
       border-radius:var(--radius);
       overflow:hidden;
+      box-shadow:none;
+      outline:none;
 
-      /* アンチエイリアスが混ざる相手も黒に固定 */
-      background:#000;
-
-      /* iOS の“白縁”対策：黒の極薄インセット影で縁色を黒に固定（見た目の枠は出ません） */
-      box-shadow:0 0 0 0.5px #000 inset;
-
-      /* Safari の描画安定化 */
+      /* iOS Safari 描画乱れ防止 */
       -webkit-transform:translateZ(0);
-              transform:translateZ(0);
-      -webkit-mask-image:-webkit-radial-gradient(#000,#000); /* 角のにじみ防止 */
+      transform:translateZ(0);
     }
 
-    /* 中央配置／リンクの色 */
+    /* コンテンツ中央寄せ */
     .wrap{
-      min-height:100dvh;
-      display:flex; flex-direction:column;
-      align-items:center; justify-content:center;
-      gap:28px; padding:24px; box-sizing:border-box;
+      min-height:100dvh; /* アドレスバー縮小にも追随 */
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      gap:28px;
+      padding:24px;
+      box-sizing:border-box;
     }
+
+    /* リンク色 */
     a{
-      color:var(--fg); text-decoration:none; -webkit-tap-highlight-color:transparent;
+      color:var(--fg);
+      text-decoration:none;
+      -webkit-tap-highlight-color:transparent;
     }
-    a:visited{color:var(--fg)}
-    a:hover, a:focus, a:active{color:var(--white); outline:none}
-    .item{display:flex; flex-direction:column; align-items:center; gap:8px}
-    .link{display:inline-block}
-    .sub{opacity:.85; font-size:12px}
+    a:visited{ color:var(--fg); }
+    a:hover, a:focus, a:active{
+      color:var(--white);
+      outline:none;
+    }
+
+    .item{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .link{ display:inline-block; }
+    .sub{ opacity:.85; font-size:12px; }
   </style>
 </head>
 <body>
-  <!-- 角丸はこの中だけで完結。外側は完全に黒で塗り潰し -->
-  <div class="rim">
-    <main class="wrap">
-      <div class="item"><a class="link" href="Inventarium.html">I</a></div>
-      <div class="item"><a class="link" id="archiveLink" href="#" target="_blank" rel="noopener">▦</a></div>
-      <div class="item"><span class="link" style="cursor:default">ineffabilis / ineffable / ineffabile / inefavlo</span></div>
-    </main>
-  </div>
+  <main class="wrap">
+    <div class="item"><a class="link" href="Inventarium.html">I</a></div>
+    <div class="item"><a class="link" id="archiveLink" href="#" target="_blank" rel="noopener">▦</a></div>
+    <div class="item"><span class="link" style="cursor:default">ineffabilis / ineffable / ineffabile / inefavlo</span></div>
+  </main>
 
   <script>
     const ARCHIVE_URL = "archIve.org.html";
