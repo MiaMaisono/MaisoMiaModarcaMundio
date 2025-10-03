@@ -4,45 +4,55 @@
   <meta charset="UTF-8" />
   <title>#i</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#000000" />
   <style>
     :root{ --bg:#000; --fg:#7F7F7F; --white:#FFF; --radius:26.5px; }
 
-    /* ページ土台は透過にする（角丸を視認させるため） */
+    /* 背面は常に黒（透過を作らない） */
     html, body{
       margin:0; height:100%;
-      background:transparent;
-      color:var(--fg); font-family:Georgia,serif;
+      background:#000; color:var(--fg);
+      font-family:Georgia,serif;
     }
 
-    /* 画面いっぱいを角丸でクリップし、ここだけ黒にする */
-    .frame{
+    /* 角丸クリップ用のラッパ（ここだけに角丸を与える） */
+    .rim{
       position:fixed; inset:0;
       border-radius:var(--radius);
       overflow:hidden;
-      background:var(--bg);                 /* 黒はここにだけ塗る */
-      -webkit-mask-image:-webkit-radial-gradient(white, black); /* iOSエッジにじみ対策 */
+
+      /* アンチエイリアスが混ざる相手も黒に固定 */
+      background:#000;
+
+      /* iOS の“白縁”対策：黒の極薄インセット影で縁色を黒に固定（見た目の枠は出ません） */
+      box-shadow:0 0 0 0.5px #000 inset;
+
+      /* Safari の描画安定化 */
+      -webkit-transform:translateZ(0);
+              transform:translateZ(0);
+      -webkit-mask-image:-webkit-radial-gradient(#000,#000); /* 角のにじみ防止 */
     }
 
-    /* 中央配置（アドレスバー伸縮でも欠けない） */
+    /* 中央配置／リンクの色 */
     .wrap{
       min-height:100dvh;
       display:flex; flex-direction:column;
       align-items:center; justify-content:center;
       gap:28px; padding:24px; box-sizing:border-box;
     }
-
-    /* リンクは枠なし・visited同色・ホバーで白 */
-    a{ color:var(--fg); text-decoration:none; -webkit-tap-highlight-color:transparent; }
-    a:visited{ color:var(--fg); }
-    a:hover, a:focus, a:active{ color:var(--white); outline:none; }
-
-    .item{ display:flex; flex-direction:column; align-items:center; gap:8px; }
-    .link{ display:inline-block; }
-    .sub{ opacity:.85; font-size:12px; }
+    a{
+      color:var(--fg); text-decoration:none; -webkit-tap-highlight-color:transparent;
+    }
+    a:visited{color:var(--fg)}
+    a:hover, a:focus, a:active{color:var(--white); outline:none}
+    .item{display:flex; flex-direction:column; align-items:center; gap:8px}
+    .link{display:inline-block}
+    .sub{opacity:.85; font-size:12px}
   </style>
 </head>
 <body>
-  <div class="frame">
+  <!-- 角丸はこの中だけで完結。外側は完全に黒で塗り潰し -->
+  <div class="rim">
     <main class="wrap">
       <div class="item"><a class="link" href="Inventarium.html">I</a></div>
       <div class="item"><a class="link" id="archiveLink" href="#" target="_blank" rel="noopener">▦</a></div>
