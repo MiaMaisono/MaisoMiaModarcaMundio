@@ -4,46 +4,37 @@
   <meta charset="UTF-8" />
   <title>#i</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root { --bg:#000; --fg:#7F7F7F; --white:#FFF; }
+　  <style>
+  :root{ --bg:#000; --fg:#7F7F7F; --white:#FFF; }
 
-    /* 背景・文字色の基本指定 */
-    html,body{
-      margin:0; height:100%;
-      background:var(--bg); color:var(--fg);
-      font-family:Georgia,serif;
-    }
+  html,body{
+    margin:0;
+    height:100%;
+    background:var(--bg);
+    color:var(--fg);
+    font-family:Georgia,serif;
+  }
 
-    /* 角丸＋外周（四隅のカーブ） */
-    body{
-      border-radius:26.5px;                 /* 曲率：必要に応じて調整 */
-      outline:12px solid #7f7f7f;           /* Græy 外周 */
-      box-shadow:0 0 0 0px #fff inset;      /* 内側白枠（不要なら 0px のまま） */
-      overflow:hidden;                       /* カーブ外のはみ出し防止 */
-    }
+  /* 本体は高さを「動的ビューポート」に合わせる */
+  body{ min-height:100dvh; }
 
-    /* リンク色（visited含め常に Græy） */
-    a{
-      color:var(--fg); text-decoration:none;
-      -webkit-tap-highlight-color:transparent; outline:none;
-    }
-    a:visited{ color:var(--fg); }
-    a:hover, a:focus, a:active{ color:var(--white); }
-
-    /* レイアウト */
-    .wrap{
-      min-height:100vh;
-      display:flex; flex-direction:column;
-      align-items:center; justify-content:center;
-      gap:28px; padding:24px; box-sizing:border-box;
-    }
-    .item{ display:flex; flex-direction:column; align-items:center; gap:8px; }
-
-    /* 見た目の囲いを作らない */
-    .link{ display:inline-block; }
-
-    .sub{ opacity:.85; font-size:12px; }
-  </style>
+  /* 角丸＋外周（固定オーバーレイ方式） */
+  .viewport-frame{
+    position:fixed; inset:0;
+    pointer-events:none;           /* クリックに干渉しない */
+    border-radius:26.5px;          /* 曲率（お好みで） */
+    overflow:hidden;
+    transform:translateZ(0);       /* iOSの1pxズレ対策 */
+    -webkit-backface-visibility:hidden;
+  }
+  .viewport-frame::before{
+    content:"";
+    position:absolute; inset:0;
+    border-radius:inherit;
+    outline:12px solid #7f7f7f;    /* Græy 外周 */
+    box-shadow:inset 0 0 0 0 #fff; /* 内側白枠：太さを増やすなら 0→px */
+  }
+　</style>
 </head>
 <body>
   <main class="wrap">
