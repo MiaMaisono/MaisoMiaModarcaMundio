@@ -3,61 +3,38 @@
 <head>
   <meta charset="UTF-8" />
   <title>#i</title>
-  <!-- iOS Safari の安全領域を正しく扱う -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <style>
-    :root{
-      --bg:#000; --fg:#7F7F7F; --white:#FFF; --radius:26.5px;
+    :root{ --bg:#000; --fg:#7F7F7F; --white:#FFF; --radius:26.5px; }
+
+    /* ページ土台は透過にする（角丸を視認させるため） */
+    html, body{
+      margin:0; height:100%;
+      background:transparent;
+      color:var(--fg); font-family:Georgia,serif;
     }
 
-    /* html 自体も黒にする（透過はしない） */
-    html{
-      margin:0;
-      height:100%;
-      background:var(--bg);
-    }
-
-    /* body 全体を角丸でクリップする */
-    body{
-      margin:0;
-      height:100%;
-      background:var(--bg);
-      color:var(--fg);
-      font-family:Georgia,serif;
-
+    /* 画面いっぱいを角丸でクリップし、ここだけ黒にする */
+    .frame{
+      position:fixed; inset:0;
       border-radius:var(--radius);
       overflow:hidden;
-      box-shadow:none;
-      outline:none;
-
-      /* iOS Safari 描画乱れ防止 */
-      -webkit-transform:translateZ(0);
-      transform:translateZ(0);
+      background:var(--bg);                 /* 黒はここにだけ塗る */
+      -webkit-mask-image:-webkit-radial-gradient(white, black); /* iOSエッジにじみ対策 */
     }
 
-    /* コンテンツ中央寄せ */
+    /* 中央配置（アドレスバー伸縮でも欠けない） */
     .wrap{
-      min-height:100dvh; /* アドレスバー縮小にも追随 */
-      display:flex;
-      flex-direction:column;
-      align-items:center;
-      justify-content:center;
-      gap:28px;
-      padding:24px;
-      box-sizing:border-box;
+      min-height:100dvh;
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:28px; padding:24px; box-sizing:border-box;
     }
 
-    /* リンク色 */
-    a{
-      color:var(--fg);
-      text-decoration:none;
-      -webkit-tap-highlight-color:transparent;
-    }
+    /* リンクは枠なし・visited同色・ホバーで白 */
+    a{ color:var(--fg); text-decoration:none; -webkit-tap-highlight-color:transparent; }
     a:visited{ color:var(--fg); }
-    a:hover, a:focus, a:active{
-      color:var(--white);
-      outline:none;
-    }
+    a:hover, a:focus, a:active{ color:var(--white); outline:none; }
 
     .item{ display:flex; flex-direction:column; align-items:center; gap:8px; }
     .link{ display:inline-block; }
@@ -65,11 +42,13 @@
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <div class="item"><a class="link" href="Inventarium.html">I</a></div>
-    <div class="item"><a class="link" id="archiveLink" href="#" target="_blank" rel="noopener">▦</a></div>
-    <div class="item"><span class="link" style="cursor:default">ineffabilis / ineffable / ineffabile / inefavlo</span></div>
-  </main>
+  <div class="frame">
+    <main class="wrap">
+      <div class="item"><a class="link" href="Inventarium.html">I</a></div>
+      <div class="item"><a class="link" id="archiveLink" href="#" target="_blank" rel="noopener">▦</a></div>
+      <div class="item"><span class="link" style="cursor:default">ineffabilis / ineffable / ineffabile / inefavlo</span></div>
+    </main>
+  </div>
 
   <script>
     const ARCHIVE_URL = "archIve.org.html";
