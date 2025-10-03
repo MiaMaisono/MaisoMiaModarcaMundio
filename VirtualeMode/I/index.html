@@ -1,83 +1,59 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
-<meta charset="UTF-8" />
-<title>#i</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  :root{
-    --bg:#000; --fg:#7F7F7F; --white:#FFF;
-    --radius:26.5px;           /* 角丸 */
-    --rim:#7F7F7F;             /* Græy 外周色 */
-    --rim-w:０px;              /* 外周太さ */
-    --inner-w:0px;             /* 内側白枠（0で無効）*/
-  }
+  <meta charset="UTF-8" />
+  <title>#i</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{ --bg:#000; --fg:#7F7F7F; --white:#FFF; --radius:26.5px; }
 
-  /* ベース：黒で塗りつぶし */
-  html,body{
-    margin:0; background:#000; color:var(--fg);
-    font-family:Georgia,serif;
-    height:100%; /* フォールバック */
-  }
+    /* 背景は常に黒。html と body を同色で塗り潰し */
+    html, body{
+      margin:0;
+      height:100%;
+      background:#000;
+      color:var(--fg);
+      font-family:Georgia,serif;
+    }
 
-  /* 角丸フレーム：画面に吸着（vh問題は100dvhで回避） */
-  .frame{
-    position:fixed; inset:0;
-    min-height:100dvh;            /* iOSのアドレスバー変動に追随 */
-    display:flex; align-items:center; justify-content:center;
-    padding:
-      calc(24px + env(safe-area-inset-top,0px))
-      calc(24px + env(safe-area-inset-right,0px))
-      calc(24px + env(safe-area-inset-bottom,0px))
-      calc(24px + env(safe-area-inset-left,0px));
-    box-sizing:border-box;
-    background:var(--bg);
-    border-radius:var(--radius);
-    overflow:hidden;
-    position:relative;
-    isolation:isolate;            /* 擬似要素の重なりを安定 */
-  }
+    /* 角丸だけを適用（アウトライン/内枠は付けない） */
+    body{
+      border-radius:var(--radius);
+      overflow:hidden;                 /* 角丸外の描画を隠す */
+      outline:none; box-shadow:none;   /* 外周/内周の線は無し */
+      -webkit-tap-highlight-color:transparent;
+      /* iOS Safari の薄いライン対策（合成を促す） */
+      -webkit-transform:translateZ(0);
+      transform:translateZ(0);
+    }
 
-  /* 外周リング（Græy）＋任意の内側白枠は擬似要素で一括描画 */
-  .frame::before,
-  .frame::after{
-    content:"";
-    position:absolute; inset:0;
-    border-radius:var(--radius);
-    pointer-events:none;
-  }
-  /* 外周（Græy）*/
-  .frame::before{
-    box-shadow:0 0 0 var(--rim-w) var(--rim) inset;
-  }
-  /* 内側白枠（使わない時は --inner-w:0）*/
-  .frame::after{
-    box-shadow:0 0 0 var(--inner-w) #fff inset;
-  }
+    /* 画面フィット：アドレスバーの伸縮に追随（下線防止） */
+    .wrap{
+      min-height:100dvh;               /* 新しい動的vh */
+      display:flex; flex-direction:column;
+      align-items:center; justify-content:center;
+      gap:28px; padding:24px; box-sizing:border-box;
+    }
 
-  /* 中身（あなたの既存レイアウト） */
-  .wrap{ display:flex; flex-direction:column; align-items:center; gap:28px; }
-  .link{ color:var(--fg); text-decoration:none; -webkit-tap-highlight-color:transparent; }
-  .link:visited{ color:var(--fg); }
-  .link:hover, .link:focus, .link:active{ color:var(--white); outline:none; }
-  .sub{ opacity:.85; font-size:12px; }
-</style>
+    /* リンク色：常に Græy→ホバーで白。visited も同じ */
+    a{ color:var(--fg); text-decoration:none; }
+    a:visited{ color:var(--fg); }
+    a:hover, a:focus, a:active{ color:var(--white); outline:none; }
+
+    .item{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .link{ display:inline-block; }  /* 囲いを作らない */
+    .sub{ opacity:.85; font-size:12px; }
+  </style>
 </head>
 <body>
-  <main class="frame">
-    <div class="wrap">
-      <!-- そのままのリンク構成 -->
-      <div><a class="link" href="Inventarium.html">I</a></div>
-      <div><a class="link" id="archiveLink" href="#" target="_blank" rel="noopener">▦</a></div>
-      <div><span class="link" style="cursor:default">ineffabilis / ineffable / ineffabile / inefavlo</span></div>
-    </div>
+  <main class="wrap">
+    <div class="item"><a class="link" href="boutique.html">I</a></div>
+    <div class="item"><a class="link" id="archiveLink" href="#" target="_blank" rel="noopener">▦</a></div>
+    <div class="item"><span class="link" style="cursor:default">ineffabilis / ineffable / ineffabile / inefavlo</span></div>
   </main>
-
-<script>
-  // 必要ならここで外周や角丸を動的変更できます
-  // 例: document.documentElement.style.setProperty('--radius','32px');
-  const ARCHIVE_URL = "archIve.org.html";
-  if (ARCHIVE_URL) document.getElementById('archiveLink').href = ARCHIVE_URL;
-</script>
+  <script>
+    const ARCHIVE_URL = "archIve.org.html";
+    if (ARCHIVE_URL) document.getElementById('archiveLink').href = ARCHIVE_URL;
+  </script>
 </body>
 </html>
