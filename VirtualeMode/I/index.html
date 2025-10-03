@@ -3,30 +3,24 @@
 <head>
   <meta charset="UTF-8" />
   <title>#i</title>
-  <!-- 端末の安全領域まで正しくフィット  -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <style>
     :root{ --bg:#000; --fg:#7F7F7F; --white:#FFF; --radius:26.5px; }
 
-    /* html は透過にして“外”を見せる（角丸が視認できる） */
-    html{
+    /* ページ土台は透過にする（角丸を視認させるため） */
+    html, body{
+      margin:0; height:100%;
       background:transparent;
-      height:100%;
+      color:var(--fg); font-family:Georgia,serif;
     }
 
-    /* 画面いっぱいに広がる角丸フレーム */
+    /* 画面いっぱいを角丸でクリップし、ここだけ黒にする */
     .frame{
       position:fixed; inset:0;
       border-radius:var(--radius);
-      overflow:hidden;                 /* 角丸外を隠す */
-      -webkit-mask-image: -webkit-radial-gradient(white, black); /* iOS 角のにじみ防止 */
-    }
-
-    /* 実コンテンツの土台（黒一色） */
-    body{
-      margin:0; height:100%;
-      background:var(--bg); color:var(--fg);
-      font-family:Georgia,serif;
+      overflow:hidden;
+      background:var(--bg);                 /* 黒はここにだけ塗る */
+      -webkit-mask-image:-webkit-radial-gradient(white, black); /* iOSエッジにじみ対策 */
     }
 
     /* 中央配置（アドレスバー伸縮でも欠けない） */
@@ -37,7 +31,7 @@
       gap:28px; padding:24px; box-sizing:border-box;
     }
 
-    /* リンクの見た目（囲いなし・visited同色） */
+    /* リンクは枠なし・visited同色・ホバーで白 */
     a{ color:var(--fg); text-decoration:none; -webkit-tap-highlight-color:transparent; }
     a:visited{ color:var(--fg); }
     a:hover, a:focus, a:active{ color:var(--white); outline:none; }
@@ -48,7 +42,6 @@
   </style>
 </head>
 <body>
-  <!-- ここで全画面を角丸クリップ -->
   <div class="frame">
     <main class="wrap">
       <div class="item"><a class="link" href="Inventarium.html">I</a></div>
