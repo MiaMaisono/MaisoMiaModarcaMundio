@@ -3,54 +3,60 @@
 <head>
   <meta charset="UTF-8" />
   <title>#i</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- 端末の安全領域まで正しくフィット  -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <style>
     :root{ --bg:#000; --fg:#7F7F7F; --white:#FFF; --radius:26.5px; }
 
-    /* 背景は常に黒。html と body を同色で塗り潰し */
-    html, body{
-      margin:0;
+    /* html は透過にして“外”を見せる（角丸が視認できる） */
+    html{
+      background:transparent;
       height:100%;
-      background:#000;
-      color:var(--fg);
+    }
+
+    /* 画面いっぱいに広がる角丸フレーム */
+    .frame{
+      position:fixed; inset:0;
+      border-radius:var(--radius);
+      overflow:hidden;                 /* 角丸外を隠す */
+      -webkit-mask-image: -webkit-radial-gradient(white, black); /* iOS 角のにじみ防止 */
+    }
+
+    /* 実コンテンツの土台（黒一色） */
+    body{
+      margin:0; height:100%;
+      background:var(--bg); color:var(--fg);
       font-family:Georgia,serif;
     }
 
-    /* 角丸だけを適用（アウトライン/内枠は付けない） */
-    body{
-      border-radius:var(--radius);
-      overflow:hidden;                 /* 角丸外の描画を隠す */
-      outline:none; box-shadow:none;   /* 外周/内周の線は無し */
-      -webkit-tap-highlight-color:transparent;
-      /* iOS Safari の薄いライン対策（合成を促す） */
-      -webkit-transform:translateZ(0);
-      transform:translateZ(0);
-    }
-
-    /* 画面フィット：アドレスバーの伸縮に追随（下線防止） */
+    /* 中央配置（アドレスバー伸縮でも欠けない） */
     .wrap{
-      min-height:100dvh;               /* 新しい動的vh */
+      min-height:100dvh;
       display:flex; flex-direction:column;
       align-items:center; justify-content:center;
       gap:28px; padding:24px; box-sizing:border-box;
     }
 
-    /* リンク色：常に Græy→ホバーで白。visited も同じ */
-    a{ color:var(--fg); text-decoration:none; }
+    /* リンクの見た目（囲いなし・visited同色） */
+    a{ color:var(--fg); text-decoration:none; -webkit-tap-highlight-color:transparent; }
     a:visited{ color:var(--fg); }
     a:hover, a:focus, a:active{ color:var(--white); outline:none; }
 
     .item{ display:flex; flex-direction:column; align-items:center; gap:8px; }
-    .link{ display:inline-block; }  /* 囲いを作らない */
+    .link{ display:inline-block; }
     .sub{ opacity:.85; font-size:12px; }
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <div class="item"><a class="link" href="Inventarium.html">I</a></div>
-    <div class="item"><a class="link" id="archiveLink" href="#" target="_blank" rel="noopener">▦</a></div>
-    <div class="item"><span class="link" style="cursor:default">ineffabilis / ineffable / ineffabile / inefavlo</span></div>
-  </main>
+  <!-- ここで全画面を角丸クリップ -->
+  <div class="frame">
+    <main class="wrap">
+      <div class="item"><a class="link" href="Inventarium.html">I</a></div>
+      <div class="item"><a class="link" id="archiveLink" href="#" target="_blank" rel="noopener">▦</a></div>
+      <div class="item"><span class="link" style="cursor:default">ineffabilis / ineffable / ineffabile / inefavlo</span></div>
+    </main>
+  </div>
+
   <script>
     const ARCHIVE_URL = "archIve.org.html";
     if (ARCHIVE_URL) document.getElementById('archiveLink').href = ARCHIVE_URL;
