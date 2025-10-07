@@ -1,36 +1,316 @@
-<!DOCTYPE html>
-<html lang="en">
+<!doctype html>
+<html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>ϻiapol𝐯o #L</title>
-  <style>
-    html, body {
-      background-color: #000;
-      margin: 0;
-      padding: 0;
-      height: 100vh;
-      width: 100vw;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    a.mail-icon {
-      font-size: 12px;
-      text-decoration: none;
-      color: #fff;
-      cursor: pointer;
-    }
-
-    a.mail-icon:hover {
-      opacity: 0.7;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Newton Threads — Fallback</title>
+<style>
+  :root{ --bg:#000; --fg:#7F7F7F; --edge:26.5px; }
+  html,body{
+    height:100%; margin:0; background:var(--bg);
+    color:var(--fg); font-family:Futura, "Helvetica Neue", Arial, sans-serif;
+  }
+  /* 位置決めは transform 中央寄せ（縦横センターが確実） */
+  .frame{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:960px; height:640px; /* JSで上書きするが、初期値も入れておく */
+    border-radius:var(--edge); overflow:hidden; background:#000;
+    outline:1px solid rgba(127,127,127,0.15);
+    box-shadow:0 0 0 1px rgba(127,127,127,0.08) inset;
+  }
+  canvas{ position:absolute; inset:0; display:block; }
+  .hud{
+    position:absolute; left:10px; bottom:8px; font-size:12px; letter-spacing:.02em;
+    background:rgba(0,0,0,.35); padding:6px 8px; border-radius:10px;
+    -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+  }
+  .hud b{ color:#9f9f9f; font-weight:500; }
+  .tip{ position:absolute; right:10px; bottom:8px; font-size:11px; opacity:.7 }
+</style>
 </head>
 <body>
-  <a class="mail-icon"
-     href="mailto:MiaMaisono@icloud.com?subject=%E2%9C%89%EF%B8%8E%20%E2%9B%BBiapol%F0%9D%90%BE%20%23L%20%E3%82%AA%E3%83%BC%E3%83%80%E3%83%BC&body=%E3%81%94%E6%B3%A8%E6%96%87%E3%81%82%E3%82%8A%E3%81%8C%E3%81%A8%E3%81%86%E3%81%94%E3%81%96%E3%81%84%E3%81%BE%E3%81%99%E3%80%82%E4%BB%A5%E4%B8%8B%E3%81%AE%E5%86%85%E5%AE%B9%E3%82%92%E3%81%94%E8%A8%98%E5%85%A5%E3%81%8F%E3%81%A0%E3%81%95%E3%81%84%E3%80%82%0A%0A---%0A%5B%E4%BE%A1%E6%A0%BC%E7%A2%BA%E8%AA%8D%5D%20%0A%E2%86%92%20%E4%BE%8B%3A%2012ETH%20%E3%81%BE%E3%81%9F%E3%81%AF%20%E5%B8%8C%E6%9C%9B%E9%A1%8D%0A%0A%5B%E3%82%A6%E3%82%A9%E3%83%AC%E3%83%83%E3%83%88%E3%82%A2%E3%83%89%E3%83%AC%E3%82%B9%5D%0A%E2%86%92%20%E4%BE%8B%3A%200xABC123...%0A%0A%5B%E3%81%94%E5%B8%8C%E6%9C%9B%E3%81%AE%E3%83%86%E3%82%AD%E3%82%B9%E3%83%88%5D%20(1%2C728%E6%96%87%E5%AD%97%E3%81%BE%E3%81%A7)%0A%E2%86%92%20%E8%A9%A9%20%2F%20%E5%91%8A%E7%99%BD%20%2F%20%E9%A1%98%E3%81%84%20%2F%20%E5%8F%AB%E3%81%B3%20%2F%20%E6%9B%B8%E3%81%8D%E3%81%8B%E3%81%91%E3%81%AE%E6%89%8B%E7%B4%99%20%E3%81%AA%E3%81%A9%E8%87%AA%E7%94%B1%E3%81%AB%E3%81%8A%E6%9B%B8%E3%81%8D%E3%81%8F%E3%81%A0%E3%81%95%E3%81%84%0A%0A---%0A%0A%E2%80%BB%E6%9C%AC%E3%83%A1%E3%83%BC%E3%83%AB%E3%81%AF%E8%87%AA%E5%8B%95%E9%80%81%E4%BF%A1%E3%81%A7%E3%81%AF%E3%81%82%E3%82%8A%E3%81%BE%E3%81%9B%E3%82%93%E3%80%82%E5%86%85%E5%AE%B9%E7%A2%BA%E8%AA%8D%E5%BE%8C%E3%80%81%E3%81%94%E8%BF%94%E4%BF%A1%E3%82%92%E5%B7%A6%E6%8F%89%E3%81%84%E3%81%BE%E3%81%99%E3%80%82">
-    ✉︎
-  </a>
+  <div class="frame">
+    <canvas id="cv"></canvas>
+    <div class="hud" id="hud">READY</div>
+    <div class="tip">drag:星 / <b>Shift+wheel</b>:質量 / click:Newton / C:clear</div>
+  </div>
+
+<script>
+(() => {
+  // ==== レイアウト：3:2 を JS で強制 ====
+  const frame = document.querySelector('.frame');
+  function layoutFrame(){
+    const vw = Math.max(320, window.innerWidth  || document.documentElement.clientWidth  || 0);
+    const vh = Math.max(240, window.innerHeight || document.documentElement.clientHeight || 0);
+    // 旧：width = min(96vw, 144vh) と等価。高さは width * 2/3
+    const width  = Math.min(vw * 0.96, vh * 1.44);
+    const height = width * (2/3);
+    frame.style.width  = Math.round(width)  + 'px';
+    frame.style.height = Math.round(height) + 'px';
+  }
+  layoutFrame();
+  window.addEventListener('resize', layoutFrame, {passive:true});
+
+  // ==== キャンバス準備（HiDPI対応） ====
+  const canvas = document.getElementById('cv');
+  const ctx = canvas.getContext('2d');
+  const hud = document.getElementById('hud');
+  let dpr = Math.max(1, window.devicePixelRatio || 1);
+
+  function fitCanvas(){
+    const w = frame.clientWidth|0, h = frame.clientHeight|0;
+    canvas.width = (w * dpr)|0; canvas.height = (h * dpr)|0;
+    canvas.style.width = w+"px"; canvas.style.height = h+"px";
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  fitCanvas();
+  window.addEventListener('resize', ()=>{ dpr=Math.max(1,window.devicePixelRatio||1); fitCanvas(); needsFieldRedraw=true; draw(); }, {passive:true});
+
+  // ==== 物理設定 ====
+  const G = 1.0;
+  const world = { xMin:-1.5, xMax: 1.5, yMin:-1.0, yMax: 1.0 };
+  const masses = [
+    { x:-0.5, y:0.0, m:1.0 },
+    { x: 0.5, y:0.0, m:1.0 }
+  ];
+
+  // ==== 座標変換 ====
+  function toScreenX(x){
+    const w = frame.clientWidth;
+    return (x - world.xMin) / (world.xMax - world.xMin) * w;
+  }
+  function toScreenY(y){
+    const h = frame.clientHeight;
+    return (1 - (y - world.yMin) / (world.yMax - world.yMin)) * h;
+  }
+  function toWorld(sx, sy){
+    const w = frame.clientWidth, h = frame.clientHeight;
+    const x = world.xMin + (sx / w) * (world.xMax - world.xMin);
+    const y = world.yMin + (1 - sy / h) * (world.yMax - world.yMin);
+    return {x,y};
+  }
+
+  // ==== 力・ヤコビアン・ニュートン ====
+  function force(p){
+    let fx = 0, fy = 0;
+    for(const s of masses){
+      const dx = p.x - s.x, dy = p.y - s.y;
+      const r2 = dx*dx + dy*dy;
+      const r  = Math.sqrt(Math.max(r2, 1e-12));
+      const rr3 = Math.max(r2*r, 1e-9);
+      const c = -G * s.m / rr3;
+      fx += c * dx; fy += c * dy;
+    }
+    return {x:fx, y:fy};
+  }
+  function jacobian(p, eps=1e-4){
+    const fpx = force({x:p.x+eps, y:p.y});
+    const fmx = force({x:p.x-eps, y:p.y});
+    const fpy = force({x:p.x, y:p.y+eps});
+    const fmy = force({x:p.x, y:p.y-eps});
+    return [
+      [ (fpx.x - fmx.x)/(2*eps), (fpy.x - fmy.x)/(2*eps) ],
+      [ (fpx.y - fmx.y)/(2*eps), (fpy.y - fmy.y)/(2*eps) ]
+    ];
+  }
+  function solve2(J, F){
+    const a=J[0][0], b=J[0][1], c=J[1][0], d=J[1][1];
+    const det = a*d - b*c;
+    if(!isFinite(det) || Math.abs(det) < 1e-12) return null;
+    const inv00 =  d/det, inv01 = -b/det, inv10 = -c/det, inv11 = a/det;
+    return { x: inv00*F.x + inv01*F.y, y: inv10*F.x + inv11*F.y };
+  }
+  function newtonFrom(p0, maxIter=24, tol=1e-6){
+    const path = [{x:p0.x, y:p0.y}];
+    let p = {x:p0.x, y:p0.y};
+    for(let k=0;k<maxIter;k++){
+      const F = force(p);
+      const nF = Math.hypot(F.x, F.y);
+      if(nF < tol) break;
+      const J = jacobian(p);
+      const d = solve2(J, F);
+      if(!d) break;
+      p = { x: p.x - d.x, y: p.y - d.y };
+      if(!isFinite(p.x) || !isFinite(p.y)) break;
+      path.push(p);
+    }
+    return path;
+  }
+
+  // ==== 背景フィールド（粗格子） ====
+  let needsFieldRedraw = true;
+  const fieldCanvas = document.createElement('canvas');
+  function drawField(){
+    if(!needsFieldRedraw) return;
+    needsFieldRedraw = false;
+
+    const W = 96, H = 64;
+    fieldCanvas.width = W; fieldCanvas.height = H;
+    const g = fieldCanvas.getContext('2d');
+    const img = g.createImageData(W, H);
+
+    let min= Infinity, max=-Infinity;
+    const phi = new Float32Array(W*H);
+    for(let j=0;j<H;j++){
+      for(let i=0;i<W;i++){
+        const x = world.xMin + (i+0.5)/W * (world.xMax - world.xMin);
+        const y = world.yMin + (1 - (j+0.5)/H) * (world.yMax - world.yMin);
+        let val = 0;
+        for(const s of masses){
+          const dx = x - s.x, dy = y - s.y;
+          const r = Math.hypot(dx, dy);
+          val += -G * s.m / Math.max(r, 1e-6);
+        }
+        const k = j*W + i;
+        phi[k] = val; if(val<min) min=val; if(val>max) max=val;
+      }
+    }
+    const span = Math.max(max - min, 1e-9);
+    for(let j=0;j<H;j++){
+      for(let i=0;i<W;i++){
+        const k = j*W + i;
+        let t = (phi[k] - min) / span; t = Math.pow(t, 0.65);
+        const a = Math.min(255, Math.floor(255 * 0.22 * t));
+        const idx = k*4;
+        img.data[idx+0]=255; img.data[idx+1]=255; img.data[idx+2]=255; img.data[idx+3]=a;
+      }
+    }
+    g.putImageData(img, 0, 0);
+  }
+
+  // ==== 描画 ====
+  let paths = [];
+  function draw(){
+    const w = frame.clientWidth, h = frame.clientHeight;
+    ctx.clearRect(0,0,w,h);
+
+    drawField();
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalAlpha = 1.0;
+    ctx.drawImage(fieldCanvas, 0, 0, w, h);
+
+    // Newton paths
+    ctx.lineWidth = 1; ctx.lineJoin='round'; ctx.lineCap='round';
+    for(const path of paths){
+      ctx.beginPath();
+      for(let i=0;i<path.length;i++){
+        const p = path[i];
+        const sx = toScreenX(p.x), sy = toScreenY(p.y);
+        if(i===0) ctx.moveTo(sx,sy); else ctx.lineTo(sx,sy);
+      }
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.stroke();
+
+      const last = path[path.length-1];
+      const lx = toScreenX(last.x), ly = toScreenY(last.y);
+      ctx.beginPath(); ctx.arc(lx, ly, 2.2, 0, Math.PI*2);
+      ctx.fillStyle = 'rgba(255,255,255,0.8)'; ctx.fill();
+    }
+
+    // Masses
+    for(let i=0;i<masses.length;i++){
+      const s = masses[i];
+      const sx = toScreenX(s.x), sy = toScreenY(s.y);
+      const r = 7 + Math.min(10, s.m*2);
+      ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI*2);
+      ctx.fillStyle='white'; ctx.globalAlpha=0.9; ctx.fill(); ctx.globalAlpha=1.0;
+      ctx.beginPath(); ctx.arc(sx, sy, r+2.5, 0, Math.PI*2);
+      ctx.strokeStyle='rgba(127,127,127,0.35)'; ctx.stroke();
+    }
+
+    hud.textContent = masses.map((s,i)=>`★${i+1} (x:${s.x.toFixed(2)}, y:${s.y.toFixed(2)}, m:${s.m.toFixed(2)})`).join('   ');
+  }
+
+  // ==== 入力（Pointer / Mouse / Touch フォールバック） ====
+  let dragging = { idx:-1, dx:0, dy:0 };
+
+  function findMassAt(sx, sy){
+    for(let i=masses.length-1;i>=0;i--){
+      const s = masses[i];
+      const dx = sx - toScreenX(s.x), dy = sy - toScreenY(s.y);
+      if(dx*dx + dy*dy < 16*16) return i;
+    }
+    return -1;
+  }
+
+  function startAt(sx, sy){
+    const idx = findMassAt(sx, sy);
+    if(idx>=0){
+      dragging.idx = idx;
+      const s = masses[idx];
+      dragging.dx = toScreenX(s.x) - sx;
+      dragging.dy = toScreenY(s.y) - sy;
+    } else {
+      const p0 = toWorld(sx, sy);
+      const path = newtonFrom(p0, 24, 1e-6);
+      paths.push(path);
+      draw();
+    }
+  }
+  function moveAt(sx, sy){
+    if(dragging.idx<0) return;
+    const p = toWorld(sx + dragging.dx, sy + dragging.dy);
+    masses[dragging.idx].x = Math.max(world.xMin+0.01, Math.min(world.xMax-0.01, p.x));
+    masses[dragging.idx].y = Math.max(world.yMin+0.01, Math.min(world.yMax-0.01, p.y));
+    needsFieldRedraw = true; draw();
+  }
+  function endDrag(){ dragging.idx = -1; }
+
+  // Pointer
+  if(window.PointerEvent){
+    canvas.addEventListener('pointerdown', (e)=>{
+      const r = canvas.getBoundingClientRect(); startAt(e.clientX-r.left, e.clientY-r.top);
+    });
+    window.addEventListener('pointermove', (e)=>{
+      if(dragging.idx<0) return;
+      const r = canvas.getBoundingClientRect(); moveAt(e.clientX-r.left, e.clientY-r.top);
+    }, {passive:true});
+    window.addEventListener('pointerup', endDrag, {passive:true});
+  } else {
+    // Mouse
+    let mouseDown=false;
+    canvas.addEventListener('mousedown', (e)=>{
+      mouseDown=true; const r=canvas.getBoundingClientRect();
+      startAt(e.clientX-r.left, e.clientY-r.top);
+    });
+    window.addEventListener('mousemove', (e)=>{
+      if(!mouseDown) return; const r=canvas.getBoundingClientRect();
+      moveAt(e.clientX-r.left, e.clientY-r.top);
+    }, {passive:true});
+    window.addEventListener('mouseup', ()=>{ mouseDown=false; endDrag(); }, {passive:true});
+    // Touch
+    canvas.addEventListener('touchstart', (e)=>{
+      const t=e.changedTouches[0]; const r=canvas.getBoundingClientRect();
+      startAt(t.clientX-r.left, t.clientY-r.top);
+    }, {passive:true});
+    window.addEventListener('touchmove', (e)=>{
+      if(dragging.idx<0) return; const t=e.changedTouches[0]; const r=canvas.getBoundingClientRect();
+      moveAt(t.clientX-r.left, t.clientY-r.top);
+    }, {passive:true});
+    window.addEventListener('touchend', endDrag, {passive:true});
+  }
+
+  // wheel（Shift+wheelで質量変更）
+  canvas.addEventListener('wheel', (e)=>{
+    if(!e.shiftKey) return;
+    e.preventDefault();
+    const r = canvas.getBoundingClientRect();
+    const sx = e.clientX - r.left, sy = e.clientY - r.top;
+    const idx = findMassAt(sx, sy);
+    if(idx<0) return;
+    const s = masses[idx];
+    const delta = -Math.sign(e.deltaY) * 0.1;
+    s.m = Math.max(0.1, Math.min(8, s.m + delta));
+    needsFieldRedraw = true; draw();
+  }, {passive:false});
+
+  // Cでクリア
+  window.addEventListener('keydown', (e)=>{
+    if(e.key && e.key.toLowerCase()==='c'){ paths=[]; draw(); }
+  });
+
+  // ==== 初回描画（フレームサイズが0にならないよう順序を保証） ====
+  requestAnimationFrame(()=>{ fitCanvas(); needsFieldRedraw=true; draw(); });
+})();
+</script>
 </body>
 </html>
