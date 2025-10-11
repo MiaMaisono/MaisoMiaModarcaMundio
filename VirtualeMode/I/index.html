@@ -5,9 +5,13 @@
   <title>#i</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <style>
-    :root { --bg:#000; --fg:#7F7F7F; --white:#FFF; --radius:26.5px; }
+    :root{
+      --bg:#000; --fg:#7F7F7F; --white:#FFF;
+      --radius:26.5px;       /* 角の曲率 */
+      --bevel:12px;          /* 曲面（カーブ）帯の厚み：お好みで */
+    }
 
-    /* ページ全体は黒。枠線は付けず、角丸だけ適用 */
+    /* ページは黒、枠線なし。角丸のみ適用 */
     html, body{
       margin:0; height:100%;
       background:var(--bg); color:var(--fg);
@@ -15,12 +19,41 @@
     }
     body{
       border-radius:var(--radius);
-      overflow:hidden;              /* 角の外を隠す */
-      outline:none; box-shadow:none;/* 外周/内周の線は出さない */
-      -webkit-transform:translateZ(0); transform:translateZ(0); /* iOSの細線対策 */
+      overflow:hidden;                           /* 角外を隠す */
+      outline:none; box-shadow:none;             /* 外周線を出さない */
+      -webkit-transform:translateZ(0); transform:translateZ(0);
+      position:relative;
     }
 
-    /* 中央配置（アドレスバー伸縮でも欠けない） */
+    /* ⬇ 四隅だけに Græy の曲面（薄いリング）を描く */
+    body::after{
+      content:"";
+      position:fixed; inset:0; pointer-events:none;
+      /* 4つの放射グラデを重ねて四隅だけ着色（外周の直線は出ない） */
+      background:
+        radial-gradient(circle at top left,
+          transparent calc(var(--radius) - var(--bevel)),
+          #7F7F7F   calc(var(--radius) - var(--bevel)),
+          #7F7F7F   var(--radius),
+          transparent var(--radius)),
+        radial-gradient(circle at top right,
+          transparent calc(var(--radius) - var(--bevel)),
+          #7F7F7F   calc(var(--radius) - var(--bevel)),
+          #7F7F7F   var(--radius),
+          transparent var(--radius)),
+        radial-gradient(circle at bottom left,
+          transparent calc(var(--radius) - var(--bevel)),
+          #7F7F7F   calc(var(--radius) - var(--bevel)),
+          #7F7F7F   var(--radius),
+          transparent var(--radius)),
+        radial-gradient(circle at bottom right,
+          transparent calc(var(--radius) - var(--bevel)),
+          #7F7F7F   calc(var(--radius) - var(--bevel)),
+          #7F7F7F   var(--radius),
+          transparent var(--radius));
+    }
+
+    /* 中央配置 */
     .wrap{
       min-height:100dvh;
       display:flex; flex-direction:column;
@@ -28,7 +61,7 @@
       gap:28px; padding:24px; box-sizing:border-box;
     }
 
-    /* リンク：枠なし・visited同色・hover時だけ白 */
+    /* リンクの見た目（枠なし・visited同色・hover白） */
     a{ color:var(--fg); text-decoration:none; -webkit-tap-highlight-color:transparent; }
     a:visited{ color:var(--fg); }
     a:hover, a:focus, a:active{ color:var(--white); outline:none; }
