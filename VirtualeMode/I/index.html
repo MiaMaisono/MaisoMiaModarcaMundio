@@ -17,41 +17,11 @@
       background:var(--bg); color:var(--fg);
       font-family:Georgia,serif;
     }
-    body{
-      border-radius:var(--radius);
-      overflow:hidden;                           /* 角外を隠す */
-      outline:none; box-shadow:none;             /* 外周線を出さない */
-      -webkit-transform:translateZ(0); transform:translateZ(0);
-      position:relative;
-    }
-
-    /* ⬇ 四隅だけに Græy の曲面（薄いリング）を描く */
-    body::after{
-      content:"";
-      position:fixed; inset:0; pointer-events:none;
-      /* 4つの放射グラデを重ねて四隅だけ着色（外周の直線は出ない） */
-      background:
-        radial-gradient(circle at top left,
-          transparent calc(var(--radius) - var(--bevel)),
-          #7F7F7F   calc(var(--radius) - var(--bevel)),
-          #7F7F7F   var(--radius),
-          transparent var(--radius)),
-        radial-gradient(circle at top right,
-          transparent calc(var(--radius) - var(--bevel)),
-          #7F7F7F   calc(var(--radius) - var(--bevel)),
-          #7F7F7F   var(--radius),
-          transparent var(--radius)),
-        radial-gradient(circle at bottom left,
-          transparent calc(var(--radius) - var(--bevel)),
-          #7F7F7F   calc(var(--radius) - var(--bevel)),
-          #7F7F7F   var(--radius),
-          transparent var(--radius)),
-        radial-gradient(circle at bottom right,
-          transparent calc(var(--radius) - var(--bevel)),
-          #7F7F7F   calc(var(--radius) - var(--bevel)),
-          #7F7F7F   var(--radius),
-          transparent var(--radius));
-    }
+    body{border-radius:26.5px;
+              outline:12px solid #7f7f7f;       /* Græy */
+              box-shadow:0 0 0 0px #fff inset;  /* 内側白枠*/
+              overflow:hidden;
+             }
 
     /* 中央配置 */
     .wrap{
