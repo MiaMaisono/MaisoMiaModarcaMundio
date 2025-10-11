@@ -5,41 +5,37 @@
   <title>#i</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <style>
-    :root {
-      --bg:#000; --fg:#7F7F7F; --white:#FFF; --radius:26.5px;
-    }
+    :root { --bg:#000; --fg:#7F7F7F; --white:#FFF; --radius:26.5px; }
 
-    html, body {
+    /* ページ全体は黒。枠線は付けず、角丸だけ適用 */
+    html, body{
       margin:0; height:100%;
       background:var(--bg); color:var(--fg);
       font-family:Georgia,serif;
     }
-
-    /* 四隅にGræyのカーブを描き、内側は黒 */
-    body::before {
-      content:"";
-      position:fixed;
-      inset:0;
+    body{
       border-radius:var(--radius);
-      border:12px solid var(--fg); /* Græy外周 */
-      box-sizing:border-box;
-      pointer-events:none; /* クリック透過 */
+      overflow:hidden;              /* 角の外を隠す */
+      outline:none; box-shadow:none;/* 外周/内周の線は出さない */
+      -webkit-transform:translateZ(0); transform:translateZ(0); /* iOSの細線対策 */
     }
 
-    .wrap {
+    /* 中央配置（アドレスバー伸縮でも欠けない） */
+    .wrap{
       min-height:100dvh;
       display:flex; flex-direction:column;
       align-items:center; justify-content:center;
       gap:28px; padding:24px; box-sizing:border-box;
     }
 
-    a { color:var(--fg); text-decoration:none; -webkit-tap-highlight-color:transparent; }
+    /* リンク：枠なし・visited同色・hover時だけ白 */
+    a{ color:var(--fg); text-decoration:none; -webkit-tap-highlight-color:transparent; }
     a:visited{ color:var(--fg); }
     a:hover, a:focus, a:active{ color:var(--white); outline:none; }
 
-    .item { display:flex; flex-direction:column; align-items:center; gap:8px; }
-    .link { display:inline-block; }
-    .sub { opacity:.85; font-size:12px; }
+    .item{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+    .link{ display:inline-block; }
+    .sub{ opacity:.85; font-size:12px; }
   </style>
 </head>
 <body>
