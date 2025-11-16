@@ -19,22 +19,22 @@
 
     body {
       border-radius: 26.5px;
-      outline: 12px solid var(--fg);
+      outline: 12px solid var(--fg);  /* Græy */
       overflow: hidden;
+      font-family: system-ui, sans-serif;
     }
 
     .square {
       position: absolute;
-      font-size: 29.6px;
+      font-size: 29.6px;  /* 黄金比縮小 */
       color: var(--fg);
       text-decoration: none;
       transition: transform 0.2s ease;
-      font-family: system-ui, sans-serif;
+      user-select: none;
     }
 
-    /* #p は白で特別扱い */
-    .square.p {
-      color: #fff;
+    .square.highlight {
+      color: #FFF;        /* 白塗りの一個だけ */
     }
 
     .square:hover {
@@ -45,23 +45,32 @@
 
 <body>
   <script>
-    // 各リンクとシンボル
+    // 1〜6 の各面に対応するリンク
+    // index: 0〜5 が 1〜6 に対応
     const targets = [
-      { href: "p/P.html", class: "p", symbol: "❶" },
-      { href: "d/D.html", symbol: "②" },
-      { href: "6/6.html", symbol: "③" },
-      { href: "9/9.html", symbol: "④" },
-      { href: "b/B.html", symbol: "⑤" },
-      { href: "q/Q.html", symbol: "⑥" }
+      { href: "p/P.html", index: 0 }, // 1
+      { href: "d/D.html", index: 1 }, // 2
+      { href: "6/6.html", index: 2 }, // 3
+      { href: "9/9.html", index: 3 }, // 4
+      { href: "b/B.html", index: 4 }, // 5
+      { href: "q/Q.html", index: 5 }  // 6
     ];
 
-    // シャッフル（位置だけランダム）
+    // アウトライン数字 ①〜⑥
+    const outlines = ["①","②","③","④","⑤","⑥"];
+    // 塗り数字 ❶〜❻
+    const filled   = ["❶","❷","❸","❹","❺","❻"];
+
+    // どの面を「白塗り」にするかをランダムに決定
+    const highlightIndex = Math.floor(Math.random() * targets.length);
+
+    // 位置だけをランダムに散らすために targets をシャッフル
     for (let i = targets.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [targets[i], targets[j]] = [targets[j], targets[i]];
     }
 
-    // ランダム位置（12〜96%）
+    // ランダム位置（12〜96%の範囲に）
     function getRandomPosition() {
       return {
         top:  Math.floor(Math.random() * 84) + 12 + '%',
@@ -69,15 +78,21 @@
       };
     }
 
-    // DOMに追加
+    // DOM に追加
     targets.forEach(target => {
       const a = document.createElement("a");
       const pos = getRandomPosition();
+
+      const i = target.index; // 0〜5
+      const isHighlight = (i === highlightIndex);
+      const symbol = isHighlight ? filled[i] : outlines[i];
+
       a.href = target.href;
-      a.className = "square" + (target.class ? " " + target.class : "");
+      a.className = "square" + (isHighlight ? " highlight" : "");
       a.style.top = pos.top;
       a.style.left = pos.left;
-      a.textContent = target.symbol;
+      a.textContent = symbol;
+
       document.body.appendChild(a);
     });
   </script>
