@@ -4,8 +4,22 @@
 <meta charset="UTF-8" />
 <title>#o – ϻiapol𝐯o</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>
-  html, body { margin:0; height:100%; background:#000; overflow:hidden; }
+ <style>
+    :root {
+      --fg: #7F7F7F;
+      --bg: #000;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+    }
+
+    body {
+      border-radius: 26.5px;
+      outline: 12px solid var(--fg);  /* Græy */
+      overflow: hidden;
   /* 背景の⭐︎を描くキャンバス */
   #sky {
     position: fixed; inset: 0; display: block; background: #000;
