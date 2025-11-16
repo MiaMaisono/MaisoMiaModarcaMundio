@@ -4,30 +4,47 @@
   <meta charset="UTF-8" />
   <title>#P Selector</title>
   <style>
-     body{border-radius:26.5px;
-              outline:12px solid #7f7f7f;       /* Græy */
-              overflow:hidden;
-      background-color: #000;
+    html, body {
       margin: 0;
-      overflow: hidden;
+      padding: 0;
+      height: 100%;
+      background-color: #000;          /* 背景は真っ黒 */
       font-family: system-ui, sans-serif;
-             }
+    }
+
+    /* 額縁用のフレーム（ここに角丸＆枠線） */
+    .frame {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      box-sizing: border-box;
+      border-radius: 26.5px;
+      border: 12px solid #7f7f7f;      /* Græy */
+      overflow: hidden;                /* 角丸の内側だけを表示 */
+    }
+
     .square {
       position: absolute;
-      font-size: 29.6px; /* 黄金比縮小済 */
+      font-size: 29.6px;               /* 黄金比縮小済 */
       color: #7F7F7F;
       text-decoration: none;
       transition: transform 0.2s ease;
     }
+
+    /* P だけ白 */
     .square.p {
       color: #FFF;
     }
+
     .square:hover {
       transform: scale(1.2);
     }
   </style>
 </head>
 <body>
+  <!-- ここが実際の“キャンバス” -->
+  <div class="frame" id="frame"></div>
+
   <script>
     const targets = [
       { href: "p/P.html", class: "p" },
@@ -47,12 +64,14 @@
     // ランダム位置生成関数（12〜96%）
     function getRandomPosition() {
       return {
-        top: Math.floor(Math.random() * 84) + 12 + '%',
+        top:  Math.floor(Math.random() * 84) + 12 + '%',
         left: Math.floor(Math.random() * 84) + 12 + '%'
       };
     }
 
-    // DOMに追加
+    const frame = document.getElementById("frame");
+
+    // DOMに追加（□をフレーム内に追加する）
     targets.forEach(target => {
       const a = document.createElement("a");
       const pos = getRandomPosition();
@@ -61,7 +80,7 @@
       a.style.top = pos.top;
       a.style.left = pos.left;
       a.textContent = "□";
-      document.body.appendChild(a);
+      frame.appendChild(a);
     });
   </script>
 </body>
