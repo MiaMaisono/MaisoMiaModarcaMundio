@@ -3,22 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <title>#o – ϻiapol𝐯o</title>
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      height: 100%;
-      background-color: #000;
-      display: flex;
-      justify-content: center;
-      align-items: center;
+ <style>
+    :root {
+      --fg: #7F7F7F;
+      --bg: #000;
     }
 
-     body{border-radius:26.5px;
-              outline:12px solid #7f7f7f;       /* Græy */
-              box-shadow:0 0 0 0px #fff inset;  /* 内側白枠*/
-              overflow:hidden;
-             }
+    html, body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+    }
+
+    body {
+      border-radius: 26.5px;
+      outline: 12px solid var(--fg);  /* Græy */
+      overflow: hidden;
     
     .center-links {
       display: flex;
