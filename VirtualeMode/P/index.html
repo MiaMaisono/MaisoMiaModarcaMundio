@@ -19,7 +19,7 @@
 
     body {
       border-radius: 26.5px;
-      outline: 12px solid var(--fg); /* これが二枚目と同じ */
+      outline: 12px solid var(--fg);
       overflow: hidden;
     }
 
@@ -29,10 +29,14 @@
       color: var(--fg);
       text-decoration: none;
       transition: transform 0.2s ease;
+      font-family: system-ui, sans-serif;
     }
+
+    /* #p は白で特別扱い */
     .square.p {
-      color: #fff; /* #Pだけ白 */
+      color: #fff;
     }
+
     .square:hover {
       transform: scale(1.2);
     }
@@ -41,22 +45,23 @@
 
 <body>
   <script>
+    // 各リンクとシンボル
     const targets = [
-      { href: "p/P.html", class: "p" },
-      { href: "q/Q.html" },
-      { href: "b/B.html" },
-      { href: "d/D.html" },
-      { href: "6/6.html" },
-      { href: "9/9.html" }
+      { href: "p/P.html", class: "p", symbol: "❶" },
+      { href: "d/D.html", symbol: "②" },
+      { href: "6/6.html", symbol: "③" },
+      { href: "9/9.html", symbol: "④" },
+      { href: "b/B.html", symbol: "⑤" },
+      { href: "q/Q.html", symbol: "⑥" }
     ];
 
-    // シャッフル
+    // シャッフル（位置だけランダム）
     for (let i = targets.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [targets[i], targets[j]] = [targets[j], targets[i]];
     }
 
-    // ランダム位置 (12〜96%)
+    // ランダム位置（12〜96%）
     function getRandomPosition() {
       return {
         top:  Math.floor(Math.random() * 84) + 12 + '%',
@@ -64,7 +69,7 @@
       };
     }
 
-    // □を body に追加
+    // DOMに追加
     targets.forEach(target => {
       const a = document.createElement("a");
       const pos = getRandomPosition();
@@ -72,7 +77,7 @@
       a.className = "square" + (target.class ? " " + target.class : "");
       a.style.top = pos.top;
       a.style.left = pos.left;
-      a.textContent = "□";
+      a.textContent = target.symbol;
       document.body.appendChild(a);
     });
   </script>
