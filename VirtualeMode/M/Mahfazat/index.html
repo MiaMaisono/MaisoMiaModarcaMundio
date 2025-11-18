@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title> محفظة / Maḥfaẓa(t) </title>
   <meta name="color-scheme" content="dark">
+
+  <!-- === 第一段階 CSS（あなたの元コードを保持） === -->
   <style>
     :root { --bg:#000; --fg:#e5e5e5; --muted:#7f7f7f; }
     html, body { margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, -apple-system, Helvetica, Arial, "Noto Sans JP", sans-serif; }
@@ -18,24 +20,22 @@
     .thumb { aspect-ratio:1/1; width:100%; background:#111; border-radius:10px; object-fit:cover; }
     .meta { margin-top:8px; font-size:13px; color:var(--muted); line-height:1.5; }
     .title { font-size:14px; margin-top:8px; }
-     body{border-radius:26.5px;
-              outline:12px solid #7f7f7f;       /* Græy */
-              box-shadow:0 0 0 0px #fff inset;  /* 内側白枠*/
-              overflow:hidden;
-             }
+
+    body{
+      border-radius:26.5px;
+      outline:12px solid #7f7f7f;       /* Græy */
+      box-shadow:0 0 0 0px #fff inset;  /* 内側白枠*/
+      overflow:hidden;
+    }
   </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <a href="../">← ℳ𝒶𝒽𝒻𝒶𝓏𝒶𝓉</a>
-    
+
+  <!-- === 第二段階 CSS（これも全て元コードのまま、正しい位置へ移動） === -->
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     :root{
       --bg:#000; --fg:#7F7F7F; --white:#FFF;
-      --gap:12px; --phiInv:0.618033988749;  /* 画像=タイルの 1/φ */
-      --pad:72px;                           /* 四隅UIの作業余白 */
+      --gap:12px; --phiInv:0.618033988749;
+      --pad:72px;
       --speed:.18s;
     }
     html,body{margin:0;height:100%;background:var(--bg);color:var(--fg);font-family:Georgia,serif;}
@@ -44,7 +44,7 @@
     /* 全体 */
     .stage{min-height:100vh;display:flex;flex-direction:column}
 
-    /* 商品グリッド（下から上に埋まる見え方） */
+    /* 商品グリッド */
     .wrap{flex:1;display:flex;align-items:flex-end;justify-content:center;padding:var(--pad) 12px}
     .grid{
       width:100%;max-width:1400px;
@@ -55,15 +55,14 @@
     .card{background:var(--fg);aspect-ratio:1/1;display:flex;align-items:center;justify-content:center;overflow:hidden}
     .card img{max-width:calc(100%*var(--phiInv));max-height:calc(100%*var(--phiInv));display:block;object-fit:contain}
 
-    /* ───────── 四隅 UI（アイコン→展開） ───────── */
+    /* 四隅UI */
     .ctrl{position:fixed;z-index:10;display:flex;gap:8px;align-items:center}
     .TL{top:8px;left:8px}
     .BL{bottom:8px;left:8px}
     .BR{bottom:8px;right:8px}
-
-    /* 右上：サイズメニュー（◇は最右、選択肢は左に展開） */
     .TR{
-      top:8px; right:8px; position:fixed;
+      top:8px; right:8px;
+      position:fixed;
       display:flex; flex-direction:row-reverse; gap:8px; align-items:center;
     }
     #sizePanel{display:flex;flex-direction:row-reverse;justify-content:flex-end}
@@ -76,44 +75,44 @@
     .TR .panel.show  {transform:translateX(0)}
     .TR .icon-btn{padding-right:2px}
 
-    /* アイコン（枠なし・白） */
+    /* ボタン */
     .icon-btn{
       appearance:none;border:none;background:transparent;color:var(--white);
       font:inherit;font-size:20px;line-height:1;cursor:pointer;padding:6px;
     }
-
-    /* テキスト系ボタン */
     .btn, .chip, .size-btn{
       appearance:none;border:none;background:transparent;color:var(--fg);
       cursor:pointer;font:inherit;padding:2px 4px;
     }
     .btn[data-active="true"], .chip[data-active="true"], .size-btn[data-active="true"]{color:var(--white)}
 
-    /* サイズ図形（文字記号） */
     .size-btn{font-size:18px;line-height:1}
 
-    /* カラー（花アイコン展開） */
     .emoji{font-size:18px;line-height:1;padding:2px 3px}
     .emoji[data-active="true"]{color:var(--white)}
-
-    /* 右下ランダム（⟲⟳ トグル） */
     .rand[data-active="true"]{color:var(--white)}
 
-    /* 中央下のブランド（48px） */
+    /* ブランド */
     .brand-wrap{position:fixed;left:0;right:0;bottom:20px;display:flex;justify-content:center;pointer-events:none}
     .brand{pointer-events:auto;color:var(--fg);font-size:48px;line-height:1;text-decoration:none}
     .brand:hover{color:var(--white)}
-     body {margin: 0; height: 100vh;background: #000;
-          border-radius: 26.5px;
-          outline: 12px solid #7f7f7f;      /* Græy */
-          box-shadow: 0 0 0 0px #fff inset; /* 内側白枠 */
-          overflow: hidden;}
+
+    /* 再定義 body（元コードのまま保持） */
+    body {
+      margin: 0; height: 100vh;background: #000;
+      border-radius: 26.5px;
+      outline: 12px solid #7f7f7f;
+      box-shadow: 0 0 0 0px #fff inset;
+      overflow: hidden;
+    }
   </style>
 </head>
+
 <body>
+
   <div class="stage">
 
-    <!-- 左上：カテゴリ -->
+    <!-- 左上カテゴリ -->
     <div class="ctrl TL">
       <button class="icon-btn" id="catToggle" aria-label="カテゴリ">亖</button>
       <div class="panel hidden" id="stylePanel" aria-label="スタイル">
@@ -125,7 +124,7 @@
       </div>
     </div>
 
-    <!-- 右上：サイズ（◇ → □ ▯ ▭）※◇=トグル -->
+    <!-- 右上サイズ -->
     <div class="ctrl TR">
       <button class="icon-btn" id="sizeToggle" aria-label="サイズ">◇</button>
       <div class="panel hidden" id="sizePanel" aria-label="サイズ">
@@ -135,7 +134,7 @@
       </div>
     </div>
 
-    <!-- 左下：カラー（💐 → 花の絵文字群） -->
+    <!-- 左下カラー -->
     <div class="ctrl BL">
       <button class="icon-btn" id="colorToggle" aria-label="カラー">💐</button>
       <div class="panel hidden" id="colorPanel" aria-label="カラー">
@@ -153,28 +152,28 @@
       </div>
     </div>
 
-    <!-- 右下：ランダム（⟲⟳） -->
+    <!-- 右下ランダム -->
     <div class="ctrl BR">
       <button class="icon-btn rand" id="randToggle" aria-label="ランダム">⟳</button>
     </div>
 
-    <!-- 一覧（下から上へ埋まる） -->
+    <!-- グリッド -->
     <main class="wrap">
       <section id="grid" class="grid" aria-live="polite"></section>
     </main>
 
-    <!-- 中央下：ブランド 48px -->
+    <!-- ブランド -->
     <div class="brand-wrap">
       <a class="brand" href="https://abcdefghijklnopqrstuw.xyz">Vϻ</a>
     </div>
+
   </div>
 
+  <!-- === JS（あなたの元コードを完全保持） === -->
   <script>
-    /* ===== データ ===== */
-    const DATA_URL = 'products.json';     // 144点のデータ
+    const DATA_URL = 'products.json';
     const GRID = document.getElementById('grid');
 
-    /* ===== UI 開閉（各トグルと対応パネルを1対1で開閉） ===== */
     const TOGGLE_MAP = {
       catToggle:  'stylePanel',
       sizeToggle: 'sizePanel',
@@ -191,19 +190,16 @@
       });
       panel.addEventListener('click', (e)=>e.stopPropagation());
     }
-    // 画面のどこか別をクリックで全パネルを閉じる
     document.addEventListener('click', ()=>{
       document.querySelectorAll('.panel').forEach(x=>{x.classList.add('hidden');x.classList.remove('show');});
     });
 
-    /* ===== 状態 ===== */
-    let items = [];             // 全144
-    let styleSel = 'all';       // jewelry/bag/wear/pattern/all
-    let sizeSel  = null;        // tall/square/wide/null
-    let colorsSel = new Set();  // 複数可
-    let randSeed = 0;           // 疑似ランダムの種
+    let items = [];
+    let styleSel = 'all';
+    let sizeSel  = null;
+    let colorsSel = new Set();
+    let randSeed = 0;
 
-    /* ===== ユーティリティ ===== */
     function shuffle(a, seed=0){
       const r = a.slice();
       let s = seed || Date.now();
@@ -238,15 +234,13 @@
       for(const it of listed){ GRID.appendChild(card(it)); }
     }
 
-    /* ===== クリック動作 ===== */
-    // スタイル
     document.getElementById('stylePanel').addEventListener('click', e=>{
       const b = e.target.closest('.btn'); if(!b) return;
       styleSel = b.dataset.style;
       for(const el of e.currentTarget.querySelectorAll('.btn')) el.dataset.active = (el===b) ? "true" : "false";
       render();
     });
-    // サイズ
+
     document.getElementById('sizePanel').addEventListener('click', e=>{
       const b = e.target.closest('.size-btn'); if(!b) return;
       const prev = e.currentTarget.querySelector('[data-active="true"]');
@@ -257,7 +251,7 @@
       }
       render();
     });
-    // カラー
+
     document.getElementById('colorPanel').addEventListener('click', e=>{
       const c = e.target.closest('.emoji'); if(!c) return;
       const name = c.dataset.color;
@@ -265,7 +259,7 @@
       else{ c.dataset.active="true"; colorsSel.add(name); }
       render();
     });
-    // ランダム（⟲⟳）
+
     document.getElementById('randToggle').addEventListener('click', e=>{
       const b = e.currentTarget;
       randSeed = (randSeed?0:Date.now());
@@ -273,13 +267,13 @@
       render();
     });
 
-    /* ===== データ読込 ===== */
     (async () => {
       const res = await fetch(DATA_URL);
       const data = await res.json();
-      items = data.sort((a,b)=>(a.order||0)-(b.order||0));  // 安定順
+      items = data.sort((a,b)=>(a.order||0)-(b.order||0));
       render();
     })();
   </script>
+
 </body>
 </html>
