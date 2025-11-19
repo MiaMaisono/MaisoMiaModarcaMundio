@@ -3,4 +3,228 @@
 <head>
   <meta charset="UTF-8" />
   <title>Inventarium</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <style>
+    :root{
+      --bg:#000;
+      --fg:#7F7F7F;
+      --white:#FFF;
+      --radius:26.5px;
+      --thumbSize:96px;              /* サムネ額の一辺 */
+      --sqrt2:1.41421356237;         /* √2 */
+    }
+
+    /* ページ全体：黒背景＋Græy外周＋角丸 */
+    html,body{
+      margin:0;
+      height:100%;
+      background:var(--bg);
+      color:var(--fg);
+      font-family:Georgia,serif;
+    }
+    body{
+      height:100vh;                 /* 全画面フィット */
+      border-radius:var(--radius);
+      outline:12px solid #7f7f7f;   /* Græy 外周 */
+      box-shadow:0 0 0 0px #fff inset; /* 内側白枠（今は0pxで実質なし） */
+      overflow:hidden;
+    }
+
+    a{ color:inherit; text-decoration:none; }
+
+    /* レイアウト：上にメイン、下にサムネ列 */
+    .stage{
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+      box-sizing:border-box;
+    }
+
+    .main-area{
+      flex:1;
+      display:flex;
+      align-items:center;           /* 縦方向センター */
+      justify-content:center;       /* 横方向センター */
+      padding:16px;
+      box-sizing:border-box;
+    }
+
+    .main-frame{
+      max-width: min(90vw, 90vh);   /* 画面に収まるように */
+      max-height:min(90vh, 90vw);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background:#000;
+    }
+    .main-frame img{
+      max-width:100%;
+      max-height:100%;
+      object-fit:contain;
+      image-rendering:auto;
+    }
+
+    /* サムネイルバー：下部にグリッド */
+    .thumb-bar{
+      padding:8px 12px 16px;
+      box-sizing:border-box;
+      overflow-x:auto;
+      overflow-y:hidden;
+    }
+    .thumb-grid{
+      display:grid;
+      grid-auto-flow:column;          /* 横方向に流れる */
+      grid-auto-columns:var(--thumbSize);
+      gap:8px;
+      align-items:center;
+    }
+
+    .thumb{
+      width:var(--thumbSize);
+      height:var(--thumbSize);
+      background:var(--fg);          /* Græy 額 */
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      overflow:hidden;
+      cursor:pointer;
+    }
+
+    /* Femme：ダイヤモンド額 */
+    .thumb.femme{
+      transform:rotate(45deg);       /* 額を回転してダイヤに */
+    }
+    .thumb.femme .inner{
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      transform:rotate(-45deg);      /* 中身を戻す */
+    }
+
+    /* Homme：そのまま正方形額 */
+    .thumb.homme .inner{
+      width:100%;
+      height:100%;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
+
+    /* サムネ画像：長辺 = 額の 1/√2 になるように */
+    .thumb img{
+      max-width: calc(100% / var(--sqrt2));
+      max-height:calc(100% / var(--sqrt2));
+      object-fit:contain;
+      image-rendering:auto;
+      display:block;
+    }
+
+    /* 選択中のサムネに少しだけ強調（任意） */
+    .thumb.is-active{
+      box-shadow:0 0 0 1px var(--white);
+    }
+
+    /* 小さい画面での安全余白 */
+    @supports (min-height: 100dvh){
+      .stage{ min-height:100dvh; }
+    }
+  </style>
+</head>
+<body>
+  <div class="stage">
+    <!-- 中央原寸表示 -->
+    <section class="main-area">
+      <div class="main-frame">
+        <img id="mainImage" src="" alt="#i main" loading="eager" />
+      </div>
+    </section>
+
+    <!-- 下部サムネ一覧 -->
+    <section class="thumb-bar">
+      <div id="thumbGrid" class="thumb-grid" aria-label="Thumbnails"></div>
+    </section>
+  </div>
+
+  <script>
+    /* ========== 画像データ ========== */
+    // ここに 145 枚ぶんを定義してください。
+    // type: "femme" ならダイヤ、"homme" なら正方額で表示されます。
+    const IMAGES = [
+      // 例：
+      { id:"i-0001", type:"femme", thumb:"img/i/i-0001.webp", full:"img/i/i-0001-full.jpg" },
+      { id:"i-0002", type:"homme", thumb:"img/i/i-0002.webp", full:"img/i/i-0002-full.jpg" },
+      // … この要領で 145 件
+    ];
+
+    /* ========== ユーティリティ（省エネな単純シャッフル） ========== */
+    function shuffle(arr){
+      const a = arr.slice();
+      for(let i = a.length - 1; i > 0; i--){
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+
+    const mainImage = document.getElementById('mainImage');
+    const thumbGrid = document.getElementById('thumbGrid');
+
+    let currentId = null;
+
+    function setMain(item){
+      currentId = item.id;
+      // メインには原寸（full）を使用。なければ thumb をフォールバック
+      mainImage.src = item.full || item.thumb;
+      mainImage.alt = item.id || "#i image";
+
+      // サムネの選択状態を更新
+      thumbGrid.querySelectorAll('.thumb').forEach(el=>{
+        el.classList.toggle('is-active', el.dataset.id === currentId);
+      });
+    }
+
+    function buildThumb(item){
+      const thumb = document.createElement('button');
+      thumb.type = 'button';
+      thumb.className = 'thumb ' + (item.type === 'femme' ? 'femme' : 'homme');
+      thumb.dataset.id = item.id;
+
+      const inner = document.createElement('div');
+      inner.className = 'inner';
+
+      const img = document.createElement('img');
+      img.src = item.thumb;
+      img.alt = item.id || "thumb";
+      img.loading = 'lazy';
+      img.decoding = 'async';
+
+      inner.appendChild(img);
+      thumb.appendChild(inner);
+
+      thumb.addEventListener('click', ()=>{
+        setMain(item);
+      });
+
+      return thumb;
+    }
+
+    // 初期化：145枚をランダム配置し、先頭をメインに
+    (function init(){
+      if(!IMAGES.length) return;
+      const shuffled = shuffle(IMAGES);
+
+      // メイン決定
+      setMain(shuffled[0]);
+
+      // サムネ生成
+      shuffled.forEach((item, index)=>{
+        const el = buildThumb(item);
+        if(index === 0) el.classList.add('is-active');
+        thumbGrid.appendChild(el);
+      });
+    })();
+  </script>
+</body>
 </html>
