@@ -2,197 +2,409 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>#o – ϻiapol𝐯o</title>
+<title>。</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
- <style>
-    :root {
-      --fg: #7F7F7F;
-      --bg: #000;
-    }
-
-    html, body {
-      height: 100%;
-      margin: 0;
-      background: var(--bg);
-    }
-
-    body {
-      border-radius: 26.5px;
-      outline: 12px solid var(--fg);  /* Græy */
-      overflow: hidden;
-  /* 背景の⭐︎を描くキャンバス */
-  #sky {
-    position: fixed; inset: 0; display: block; background: #000;
-    z-index: 0; pointer-events: none;
+<style>
+  :root {
+    --fg: #7F7F7F; /* Græy */
+    --bg: #000000;
   }
+
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  /* ===== 背景（円の外側）：黒×Græyの極小チェック ===== */
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000;
+    /* チェッカーボード：1マス極小（4px） */
+    background-image:
+      linear-gradient(45deg,
+        #000 25%, #7F7F7F 25%,
+        #7F7F7F 50%, #000 50%,
+        #000 75%, #7F7F7F 75%,
+        #7F7F7F 100%);
+    background-size: 4px 4px;
+  }
+
+  /* ===== 真円UIコンテナ ===== */
+  .circle {
+    position: relative;
+    width: min(90vmin, 100vw - 32px);
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    overflow: hidden;
+    outline: 12px solid var(--fg); /* 円の縁 */
+    background: var(--bg);         /* 内側は完全黒 */
+  }
+
+  /* 星空キャンバス（円の内側） */
+  #sky {
+    position: absolute;
+    inset: 0;
+    display: block;
+    background: #000;
+    z-index: 0;
+    pointer-events: none;
+  }
+
   /* 中央リンク（そのまま） */
   .center {
-    position: relative; z-index: 1; height: 100%;
-    display: grid; place-items: center;
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
   }
-  .links { display: flex; gap: 4em; }
+
+  .links {
+    display: flex;
+    gap: 4em;
+  }
+
   .links a {
-    text-decoration: none; color: #7F7F7F;
-    font-size: 3.14159265359em; font-style: italic; letter-spacing: 0.01em;
+    text-decoration: none;
+    color: #7F7F7F;
+    font-size: 3.14159265359em;
+    font-style: italic;
+    letter-spacing: 0.01em;
     -webkit-tap-highlight-color: rgba(255,255,255,0.1);
   }
+
   .links a.femme { font-family: Futura, sans-serif; }
   .links a.homme { font-family: Helvetica, Arial, sans-serif; }
+
   .links a:hover { text-decoration: underline; }
-  .links a:focus-visible { outline: 2px dashed #7F7F7F; outline-offset: 6px; }
+
+  .links a:focus-visible {
+    outline: 2px dashed #7F7F7F;
+    outline-offset: 6px;
+  }
 </style>
 </head>
 <body>
-  <canvas id="sky" aria-hidden="true"></canvas>
+  <div class="circle">
+    <canvas id="sky" aria-hidden="true"></canvas>
 
-  <div class="center">
-    <nav class="links" aria-label="primary">
-      <a class="femme" href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/2" target="_blank" rel="noopener">Femme</a>
-      <a class="homme" href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/1" target="_blank" rel="noopener">Homme</a>
-    </nav>
+    <div class="center">
+      <nav class="links" aria-label="primary">
+        <a class="femme"
+           href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/2"
+           target="_blank" rel="noopener">Femme</a>
+        <a class="homme"
+           href="https://opensea.io/item/ethereum/0xd91cd9974a4e19e4d23a4a2d94e2e5dd172eee8d/1"
+           target="_blank" rel="noopener">Homme</a>
+      </nav>
+    </div>
   </div>
 
 <script>
-/* ====== 画像→⭐︎ 座標抽出設定 ====== */
-/* GitHubのRaw画像URLを入れてください */
+/* ====== 設定：星図画像 & 検出パラメータ ====== */
+/* ここに GitHub Raw のURLを入れてください */
 const SOURCE_IMAGE = 'https://raw.githubusercontent.com/USER/REPO/BRANCH/path/sky-610-mecca-1728.png';
-const IMG_SIZE = 1728;          // スクショの一辺（px）
-const THRESH = 235;             // 白判定しきい値 (R,G,B>=235)
-const STEP = 2;                 // 走査間隔（2〜3が軽量）
-const MIN_BLOB = 1;             // 小さすぎる塊の除外
-const MAX_BLOB = 100;           // 大きすぎる塊の除外（星雲などを弾く）
-const STAR_CHAR = '⭐︎';         // 背景はこの記号で再現
-const STAR_COLOR = '#FFF';      // 白のみ
 
-const canvas = document.getElementById('sky');
-const ctx = canvas.getContext('2d');
-let starNorms = [];   // {x:0..1, y:0..1, t:0..1(大きさ比)}
+const IMG_SIZE   = 1728;  // 元スクショの一辺（px）
+const THRESH     = 235;   // 白判定しきい値 (R,G,B>=235)
+const STEP       = 2;     // 走査間隔（2〜3推奨）
+const MIN_BLOB   = 1;     // 最小星サイズ（ピクセル塊）
+const MAX_BLOB   = 100;   // 最大星サイズ（星雲を弾く）
+const STAR_CHAR  = '⭐︎';  // 星記号
+const STAR_COLOR = '#FFFFFF';
 
-function fit() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-  drawStars();
+/* ====== 流れ星パラメータ ======
+ * 現実の肉眼流星は「数個/時間」レベルなので、
+ * ここでは見栄え優先で少しだけ頻度を上げてあります。
+ * 後からここだけ書き換えれば調整できます。
+ */
+const METEOR_SPAWN_ON_LOAD = true;   // 初回表示時に必ず1本流す
+const METEOR_INTERVAL_MS   = 12000;  // 判定間隔（ms）例: 12000ms = 12秒ごと
+const METEOR_SPAWN_PROB    = 0.25;   // 各間隔での出現確率（0〜1）
+
+/* ====== DOM & グローバル ====== */
+const container = document.querySelector('.circle');
+const canvas    = document.getElementById('sky');
+const ctx       = canvas.getContext('2d');
+
+let cssW = 0, cssH = 0;
+let dpr  = window.devicePixelRatio || 1;
+
+let starNorms = [];     // { x:0..1, y:0..1, t:0..1(大きさ比) }
+let starLayer = null;   // 静止星を描いたオフスクリーン
+
+const meteors = [];     // 流れ星配列
+
+/* ====== レイアウト調整 ====== */
+function resizeCanvas() {
+  const rect = container.getBoundingClientRect();
+  cssW = rect.width;
+  cssH = rect.height;
+  dpr  = window.devicePixelRatio || 1;
+
+  canvas.width  = Math.max(1, Math.floor(cssW * dpr));
+  canvas.height = Math.max(1, Math.floor(cssH * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  if (starNorms.length) buildStarLayer();
 }
-window.addEventListener('resize', fit, { passive:true });
 
-(async function start(){
-  fit();
-  await extractStars();
-  drawStars();
-})().catch(err => console.error('star build error:', err));
+window.addEventListener('resize', resizeCanvas, { passive: true });
 
-async function extractStars(){
+/* ====== 画像から星を抽出 ====== */
+async function start() {
+  resizeCanvas();
   const img = await loadImage(SOURCE_IMAGE);
+  await extractStarsFromImage(img);
+  buildStarLayer();
 
+  // 初回の流れ星
+  if (METEOR_SPAWN_ON_LOAD) spawnMeteor();
+
+  // 以後ランダム確率で流れ星
+  setInterval(() => {
+    if (Math.random() < METEOR_SPAWN_PROB) {
+      spawnMeteor();
+    }
+  }, METEOR_INTERVAL_MS);
+
+  requestAnimationFrame(loop);
+}
+
+async function extractStarsFromImage(img) {
   const off = document.createElement('canvas');
-  off.width = IMG_SIZE; off.height = IMG_SIZE;
+  off.width  = IMG_SIZE;
+  off.height = IMG_SIZE;
   const ox = off.getContext('2d');
   ox.drawImage(img, 0, 0, IMG_SIZE, IMG_SIZE);
 
-  const cx = IMG_SIZE/2, cy = IMG_SIZE/2, R = IMG_SIZE/2;
-  const src = ox.getImageData(0, 0, IMG_SIZE, IMG_SIZE);
-  const mask = new Uint8Array(IMG_SIZE * IMG_SIZE);
+  const cx = IMG_SIZE / 2;
+  const cy = IMG_SIZE / 2;
+  const R  = IMG_SIZE / 2;
 
-  // 円の内側だけ白い点を拾う
-  for (let y=0; y<IMG_SIZE; y+=STEP){
-    const dy = y - cy, dy2 = dy*dy;
-    for (let x=0; x<IMG_SIZE; x+=STEP){
+  const src  = ox.getImageData(0, 0, IMG_SIZE, IMG_SIZE);
+  const mask = new Uint8Array(IMG_SIZE * IMG_SIZE);
+  const visited = new Uint8Array(mask.length);
+
+  // 円盤内の白いピクセルをマスク
+  for (let y = 0; y < IMG_SIZE; y += STEP) {
+    const dy  = y - cy;
+    const dy2 = dy * dy;
+    for (let x = 0; x < IMG_SIZE; x += STEP) {
       const dx = x - cx;
-      if (dx*dx + dy2 > R*R) continue;
-      const i = (y*IMG_SIZE + x) * 4;
-      const r = src.data[i], g = src.data[i+1], b = src.data[i+2];
-      if (r>=THRESH && g>=THRESH && b>=THRESH) mask[y*IMG_SIZE + x] = 1;
+      if (dx * dx + dy2 > R * R) continue;
+      const i = (y * IMG_SIZE + x) * 4;
+      const r = src.data[i];
+      const g = src.data[i + 1];
+      const b = src.data[i + 2];
+      if (r >= THRESH && g >= THRESH && b >= THRESH) {
+        mask[y * IMG_SIZE + x] = 1;
+      }
     }
   }
 
-  // 連結成分で重心と面積（=明るさの代用）を取る
-  const visited = new Uint8Array(mask.length);
+  // 連結成分ラベリングで星を塊として検出
   const qx = [], qy = [];
   const stars = [];
 
-  for (let y0=0; y0<IMG_SIZE; y0+=STEP){
-    for (let x0=0; x0<IMG_SIZE; x0+=STEP){
-      const idx0 = y0*IMG_SIZE + x0;
+  for (let y0 = 0; y0 < IMG_SIZE; y0 += STEP) {
+    for (let x0 = 0; x0 < IMG_SIZE; x0 += STEP) {
+      const idx0 = y0 * IMG_SIZE + x0;
       if (!mask[idx0] || visited[idx0]) continue;
 
-      let sumX=0, sumY=0, count=0;
-      let head=0, tail=0;
-      qx[tail]=x0; qy[tail]=y0; tail++;
-      visited[idx0]=1;
+      let sumX = 0, sumY = 0, count = 0;
+      let head = 0, tail = 0;
+      qx[tail] = x0; qy[tail] = y0; tail++;
+      visited[idx0] = 1;
 
-      while (head<tail){
-        const x=qx[head], y=qy[head]; head++;
-        const idx=y*IMG_SIZE + x;
-        sumX+=x; sumY+=y; count++;
+      while (head < tail) {
+        const x = qx[head];
+        const y = qy[head];
+        head++;
+        const idx = y * IMG_SIZE + x;
 
-        neigh(x+STEP, y); neigh(x-STEP, y);
-        neigh(x, y+STEP); neigh(x, y-STEP);
+        sumX += x;
+        sumY += y;
+        count++;
 
-        function neigh(nx, ny){
-          if (nx<0||ny<0||nx>=IMG_SIZE||ny>=IMG_SIZE) return;
-          const nidx = ny*IMG_SIZE + nx;
+        // 4近傍
+        neigh(x + STEP, y);
+        neigh(x - STEP, y);
+        neigh(x, y + STEP);
+        neigh(x, y - STEP);
+
+        function neigh(nx, ny) {
+          if (nx < 0 || ny < 0 || nx >= IMG_SIZE || ny >= IMG_SIZE) return;
+          const nidx = ny * IMG_SIZE + nx;
           if (!mask[nidx] || visited[nidx]) return;
-          visited[nidx]=1; qx[tail]=nx; qy[tail]=ny; tail++;
+          visited[nidx] = 1;
+          qx[tail] = nx; qy[tail] = ny; tail++;
         }
       }
 
-      if (count>=MIN_BLOB && count<=MAX_BLOB){
-        const gx = sumX/count, gy = sumY/count;
-        const dx = gx - cx, dy = gy - cy;
-        if (dx*dx + dy*dy <= (R-2)*(R-2)) {
-          stars.push({ x: gx/IMG_SIZE, y: gy/IMG_SIZE, w: count });
+      if (count >= MIN_BLOB && count <= MAX_BLOB) {
+        const gx = sumX / count;
+        const gy = sumY / count;
+        const dx = gx - cx;
+        const dy = gy - cy;
+        if (dx * dx + dy * dy <= (R - 2) * (R - 2)) {
+          stars.push({ x: gx / IMG_SIZE, y: gy / IMG_SIZE, w: count });
         }
       }
     }
   }
 
-  // 面積→サイズ比 0..1
-  const wMin = Math.min(...stars.map(s=>s.w));
-  const wMax = Math.max(...stars.map(s=>s.w));
+  const wMin = Math.min(...stars.map(s => s.w));
+  const wMax = Math.max(...stars.map(s => s.w));
   const span = Math.max(1, wMax - wMin);
-  starNorms = stars.map(s => ({ x:s.x, y:s.y, t:(s.w - wMin)/span }));
+
+  starNorms = stars.map(s => ({
+    x: s.x,
+    y: s.y,
+    t: (s.w - wMin) / span
+  }));
+
   console.log(`Detected stars: ${starNorms.length}`);
 }
 
-function drawStars(){
-  if (!starNorms.length) return;
-  const w = canvas.width, h = canvas.height;
+/* ====== 静止星をオフスクリーンに描く ====== */
+function buildStarLayer() {
+  if (!starNorms.length || !cssW || !cssH) return;
+
+  const w = cssW;
+  const h = cssH;
   const size = Math.min(w, h);
-  const offX = (w - size)/2, offY = (h - size)/2;
+  const offX = (w - size) / 2;
+  const offY = (h - size) / 2;
 
-  ctx.clearRect(0,0,w,h);
-  // 円形クリップ
-  ctx.save();
-  ctx.beginPath();
-  ctx.arc(w/2, h/2, size/2, 0, Math.PI*2);
-  ctx.clip();
+  starLayer = document.createElement('canvas');
+  starLayer.width  = w;
+  starLayer.height = h;
+  const ox = starLayer.getContext('2d');
 
-  // ⭐︎サイズ：最小6px〜最大14px（画面に比例）
-  const pxMin = 6 * (size/IMG_SIZE);
-  const pxMax = 14 * (size/IMG_SIZE);
+  ox.fillStyle = '#000';
+  ox.fillRect(0, 0, w, h);
 
-  ctx.fillStyle = STAR_COLOR;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  const pxMin = 6 * (size / IMG_SIZE);
+  const pxMax = 14 * (size / IMG_SIZE);
 
-  for (let i=0; i<starNorms.length; i++){
-    const s = starNorms[i];
+  ox.fillStyle   = STAR_COLOR;
+  ox.textAlign   = 'center';
+  ox.textBaseline= 'middle';
+
+  for (const s of starNorms) {
     const fs = pxMin + (pxMax - pxMin) * Math.pow(s.t, 0.65);
-    ctx.font = `${fs}px serif`;
-    ctx.fillText(STAR_CHAR, offX + s.x*size, offY + s.y*size);
+    ox.font = `${fs}px serif`;
+    ox.fillText(
+      STAR_CHAR,
+      offX + s.x * size,
+      offY + s.y * size
+    );
   }
+}
+
+/* ====== 流れ星ロジック ====== */
+function spawnMeteor() {
+  if (!cssW || !cssH) return;
+
+  const w = cssW;
+  const h = cssH;
+  const size = Math.min(w, h);
+
+  const angle = Math.random() * Math.PI * 2;
+  const len   = (0.3 + Math.random() * 0.4) * size;      // 0.3〜0.7倍の長さ
+  const speed = len / (0.7 + Math.random() * 0.6);       // 0.7〜1.3秒で走り抜ける
+  const life  = len / speed;
+
+  const x0 = Math.random() * w;
+  const y0 = Math.random() * h;
+
+  const vx = Math.cos(angle) * speed;
+  const vy = Math.sin(angle) * speed;
+
+  meteors.push({
+    x: x0,
+    y: y0,
+    vx,
+    vy,
+    life,
+    age: 0
+  });
+}
+
+function updateMeteors(dt) {
+  for (let i = meteors.length - 1; i >= 0; i--) {
+    const m = meteors[i];
+    m.age += dt;
+    m.x   += m.vx * dt;
+    m.y   += m.vy * dt;
+
+    if (m.age >= m.life ||
+        m.x < -50 || m.y < -50 ||
+        m.x > cssW + 50 || m.y > cssH + 50) {
+      meteors.splice(i, 1);
+    }
+  }
+}
+
+function drawFrame() {
+  if (!cssW || !cssH) return;
+  ctx.clearRect(0, 0, cssW, cssH);
+
+  if (starLayer) {
+    ctx.drawImage(starLayer, 0, 0, cssW, cssH);
+  }
+
+  if (!meteors.length) return;
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+
+  for (const m of meteors) {
+    const alpha = Math.max(0, 1 - m.age / m.life);
+    ctx.globalAlpha = alpha;
+
+    ctx.strokeStyle = '#7F7F7F';
+    ctx.lineWidth = 1.2;
+
+    ctx.beginPath();
+    ctx.moveTo(m.x - m.vx * 0.07, m.y - m.vy * 0.07);
+    ctx.lineTo(m.x, m.y);
+    ctx.stroke();
+  }
+
   ctx.restore();
 }
 
-function loadImage(src){
-  return new Promise((res, rej)=>{
+/* ====== メインループ ====== */
+let lastTime = null;
+function loop(timestamp) {
+  if (lastTime == null) lastTime = timestamp;
+  const dt = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
+
+  updateMeteors(dt);
+  drawFrame();
+
+  requestAnimationFrame(loop);
+}
+
+/* ====== ユーティリティ ====== */
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
     const img = new Image();
-    img.crossOrigin = 'anonymous'; // GitHub Raw等から読み込むため
-    img.onload = ()=>res(img);
-    img.onerror = rej;
+    img.crossOrigin = 'anonymous';
+    img.onload  = () => resolve(img);
+    img.onerror = reject;
     img.src = src;
   });
 }
+
+/* ====== 起動 ====== */
+start().catch(err => console.error('star build error:', err));
 </script>
 </body>
 </html>
