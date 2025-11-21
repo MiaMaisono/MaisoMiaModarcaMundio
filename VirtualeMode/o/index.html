@@ -16,29 +16,23 @@
   }
 
   /* ===== 背景（円の外側）：黒×Græyのチェック柄 ===== */
-          body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-          
-            /* ベースは黒 */
-            background-color: #000000;
-          
-            /* 透過チェック柄風（黒 × Græy） */
-            background-image:
-              linear-gradient(45deg,
-                #7F7F7F 25%, transparent 25%,
-                transparent 50%, #7F7F7F 50%,
-                #7F7F7F 75%, transparent 75%,
-                transparent 100%),
-              linear-gradient(45deg,
-                #7F7F7F 25%, transparent 25%,
-                transparent 50%, #7F7F7F 50%,
-                #7F7F7F 75%, transparent 75%,
-                transparent 100%);
-            background-size: 4px 4px;      /* マスの大きさ（もっと細かくしたければ 2px とかに） */
-            background-position: 0 0, 2px 2px;
-          }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* ベースは黒 */
+    background-color: #000000;
+
+    /* 黒(#000)とGræy(#7F7F7F)の市松模様 */
+    background-image:
+      linear-gradient(0deg,
+        #000000 50%, #7F7F7F 50%),
+      linear-gradient(90deg,
+        #000000 50%, #7F7F7F 50%);
+    background-size: 2px 2px;      /* マスの大きさ。もっと細かくしたければ 1px に */
+    background-position: 0 0, 1px 1px;
+  }
 
   /* ===== 真円UIコンテナ ===== */
   .circle {
@@ -50,7 +44,6 @@
     max-height: 100vh;
     border-radius: 50%;
     overflow: hidden;
-    /* 円のまわりの Græy 枠は不要なので削除 */
     background: var(--bg);   /* 内側は完全黒 */
   }
 
@@ -64,7 +57,7 @@
     pointer-events: none;
   }
 
-  /* 中央リンク（そのまま） */
+  /* 中央リンク */
   .center {
     position: relative;
     z-index: 1;
