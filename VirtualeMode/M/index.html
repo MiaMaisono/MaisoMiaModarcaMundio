@@ -8,6 +8,12 @@
 
   <!-- === 第一段階 CSS（あなたの元コードを保持） === -->
   <style>
+      body{
+      border-radius:26.5px;
+      outline:12px solid #7f7f7f;       /* Græy */
+      box-shadow:0 0 0 0px #fff inset;  /* 内側白枠*/
+      overflow:hidden;
+    }
     :root { --bg:#000; --fg:#e5e5e5; --muted:#7f7f7f; }
     html, body { margin:0; background:var(--bg); color:var(--fg); font-family: system-ui, -apple-system, Helvetica, Arial, "Noto Sans JP", sans-serif; }
     .wrap { max-width: 1080px; margin: 0 auto; padding: 32px 20px 80px; }
@@ -20,13 +26,6 @@
     .thumb { aspect-ratio:1/1; width:100%; background:#111; border-radius:10px; object-fit:cover; }
     .meta { margin-top:8px; font-size:13px; color:var(--muted); line-height:1.5; }
     .title { font-size:14px; margin-top:8px; }
-
-    body{
-      border-radius:26.5px;
-      outline:12px solid #7f7f7f;       /* Græy */
-      box-shadow:0 0 0 0px #fff inset;  /* 内側白枠*/
-      overflow:hidden;
-    }
   </style>
 
   <!-- === 第二段階 CSS（これも全て元コードのまま、正しい位置へ移動） === -->
