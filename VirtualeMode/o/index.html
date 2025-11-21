@@ -16,27 +16,29 @@
   }
 
   /* ===== 背景（円の外側）：黒×Græyのチェック柄 ===== */
-  body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: #000;
-    /* 2つの直交linear-gradientで格子状にする */
-    background-image:
-      linear-gradient(90deg,
-        #000 25%, #7F7F7F 25%,
-        #7F7F7F 50%, #000 50%,
-        #000 75%, #7F7F7F 75%,
-        #7F7F7F 100%),
-      linear-gradient(
-        #000 25%, #7F7F7F 25%,
-        #7F7F7F 50%, #000 50%,
-        #000 75%, #7F7F7F 75%,
-        #7F7F7F 100%);
-    /* マスの大きさ（さらに小さくしたければここを 2px などに） */
-    background-size: 4px 4px;
-    background-position: 0 0, 2px 2px;
-  }
+          body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          
+            /* ベースは黒 */
+            background-color: #000000;
+          
+            /* 透過チェック柄風（黒 × Græy） */
+            background-image:
+              linear-gradient(45deg,
+                #7F7F7F 25%, transparent 25%,
+                transparent 50%, #7F7F7F 50%,
+                #7F7F7F 75%, transparent 75%,
+                transparent 100%),
+              linear-gradient(45deg,
+                #7F7F7F 25%, transparent 25%,
+                transparent 50%, #7F7F7F 50%,
+                #7F7F7F 75%, transparent 75%,
+                transparent 100%);
+            background-size: 4px 4px;      /* マスの大きさ（もっと細かくしたければ 2px とかに） */
+            background-position: 0 0, 2px 2px;
+          }
 
   /* ===== 真円UIコンテナ ===== */
   .circle {
