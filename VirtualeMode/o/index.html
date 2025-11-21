@@ -15,31 +15,41 @@
     margin: 0;
   }
 
-  /* ===== 背景（円の外側）：黒×Græyの極小チェック ===== */
+  /* ===== 背景（円の外側）：黒×Græyのチェック柄 ===== */
   body {
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: #000;
-    /* チェッカーボード：1マス極小（4px） */
+    /* 2つの直交linear-gradientで格子状にする */
     background-image:
-      linear-gradient(45deg,
+      linear-gradient(90deg,
+        #000 25%, #7F7F7F 25%,
+        #7F7F7F 50%, #000 50%,
+        #000 75%, #7F7F7F 75%,
+        #7F7F7F 100%),
+      linear-gradient(
         #000 25%, #7F7F7F 25%,
         #7F7F7F 50%, #000 50%,
         #000 75%, #7F7F7F 75%,
         #7F7F7F 100%);
+    /* マスの大きさ（さらに小さくしたければここを 2px などに） */
     background-size: 4px 4px;
+    background-position: 0 0, 2px 2px;
   }
 
   /* ===== 真円UIコンテナ ===== */
   .circle {
     position: relative;
-    width: min(90vmin, 100vw - 32px);
+    /* 画面の短辺から 19px ずつオフセットして最大サイズ */
+    width: calc(min(100vw, 100vh) - 38px);
     aspect-ratio: 1 / 1;
+    max-width: 100vw;
+    max-height: 100vh;
     border-radius: 50%;
     overflow: hidden;
-    outline: 12px solid var(--fg); /* 円の縁 */
-    background: var(--bg);         /* 内側は完全黒 */
+    /* 円のまわりの Græy 枠は不要なので削除 */
+    background: var(--bg);   /* 内側は完全黒 */
   }
 
   /* 星空キャンバス（円の内側） */
@@ -105,27 +115,21 @@
 
 <script>
 /* ====== 設定：星図画像 & 検出パラメータ ====== */
-/* ここに GitHub Raw のURLを入れてください */
 const SOURCE_IMAGE = 'https://raw.githubusercontent.com/USER/REPO/BRANCH/path/sky-610-mecca-1728.png';
 
-const IMG_SIZE   = 1728;  // 元スクショの一辺（px）
-const THRESH     = 235;   // 白判定しきい値 (R,G,B>=235)
-const STEP       = 2;     // 走査間隔（2〜3推奨）
-const MIN_BLOB   = 1;     // 最小星サイズ（ピクセル塊）
-const MAX_BLOB   = 100;   // 最大星サイズ（星雲を弾く）
-const STAR_CHAR  = '⭐︎';  // 星記号
+const IMG_SIZE   = 1728;
+const THRESH     = 235;
+const STEP       = 2;
+const MIN_BLOB   = 1;
+const MAX_BLOB   = 100;
+const STAR_CHAR  = '⭐︎';
 const STAR_COLOR = '#FFFFFF';
 
-/* ====== 流れ星パラメータ ======
- * 現実の肉眼流星は「数個/時間」レベルなので、
- * ここでは見栄え優先で少しだけ頻度を上げてあります。
- * 後からここだけ書き換えれば調整できます。
- */
-const METEOR_SPAWN_ON_LOAD = true;   // 初回表示時に必ず1本流す
-const METEOR_INTERVAL_MS   = 12000;  // 判定間隔（ms）例: 12000ms = 12秒ごと
-const METEOR_SPAWN_PROB    = 0.25;   // 各間隔での出現確率（0〜1）
+/* 流れ星パラメータ */
+const METEOR_SPAWN_ON_LOAD = true;   // 初回必ず1本
+const METEOR_INTERVAL_MS   = 12000;  // 何msごとに判定
+const METEOR_SPAWN_PROB    = 0.25;   // そのとき出現する確率
 
-/* ====== DOM & グローバル ====== */
 const container = document.querySelector('.circle');
 const canvas    = document.getElementById('sky');
 const ctx       = canvas.getContext('2d');
@@ -133,12 +137,12 @@ const ctx       = canvas.getContext('2d');
 let cssW = 0, cssH = 0;
 let dpr  = window.devicePixelRatio || 1;
 
-let starNorms = [];     // { x:0..1, y:0..1, t:0..1(大きさ比) }
-let starLayer = null;   // 静止星を描いたオフスクリーン
+let starNorms = [];
+let starLayer = null;
 
-const meteors = [];     // 流れ星配列
+const meteors = [];
 
-/* ====== レイアウト調整 ====== */
+/* ===== レイアウト ===== */
 function resizeCanvas() {
   const rect = container.getBoundingClientRect();
   cssW = rect.width;
@@ -154,26 +158,23 @@ function resizeCanvas() {
 
 window.addEventListener('resize', resizeCanvas, { passive: true });
 
-/* ====== 画像から星を抽出 ====== */
+/* ===== 起動 ===== */
 async function start() {
   resizeCanvas();
   const img = await loadImage(SOURCE_IMAGE);
   await extractStarsFromImage(img);
   buildStarLayer();
 
-  // 初回の流れ星
   if (METEOR_SPAWN_ON_LOAD) spawnMeteor();
 
-  // 以後ランダム確率で流れ星
   setInterval(() => {
-    if (Math.random() < METEOR_SPAWN_PROB) {
-      spawnMeteor();
-    }
+    if (Math.random() < METEOR_SPAWN_PROB) spawnMeteor();
   }, METEOR_INTERVAL_MS);
 
   requestAnimationFrame(loop);
 }
 
+/* 画像から星抽出 */
 async function extractStarsFromImage(img) {
   const off = document.createElement('canvas');
   off.width  = IMG_SIZE;
@@ -189,7 +190,6 @@ async function extractStarsFromImage(img) {
   const mask = new Uint8Array(IMG_SIZE * IMG_SIZE);
   const visited = new Uint8Array(mask.length);
 
-  // 円盤内の白いピクセルをマスク
   for (let y = 0; y < IMG_SIZE; y += STEP) {
     const dy  = y - cy;
     const dy2 = dy * dy;
@@ -206,7 +206,6 @@ async function extractStarsFromImage(img) {
     }
   }
 
-  // 連結成分ラベリングで星を塊として検出
   const qx = [], qy = [];
   const stars = [];
 
@@ -230,7 +229,6 @@ async function extractStarsFromImage(img) {
         sumY += y;
         count++;
 
-        // 4近傍
         neigh(x + STEP, y);
         neigh(x - STEP, y);
         neigh(x, y + STEP);
@@ -270,7 +268,7 @@ async function extractStarsFromImage(img) {
   console.log(`Detected stars: ${starNorms.length}`);
 }
 
-/* ====== 静止星をオフスクリーンに描く ====== */
+/* 静止星を描く */
 function buildStarLayer() {
   if (!starNorms.length || !cssW || !cssH) return;
 
@@ -291,9 +289,9 @@ function buildStarLayer() {
   const pxMin = 6 * (size / IMG_SIZE);
   const pxMax = 14 * (size / IMG_SIZE);
 
-  ox.fillStyle   = STAR_COLOR;
-  ox.textAlign   = 'center';
-  ox.textBaseline= 'middle';
+  ox.fillStyle    = STAR_COLOR;
+  ox.textAlign    = 'center';
+  ox.textBaseline = 'middle';
 
   for (const s of starNorms) {
     const fs = pxMin + (pxMax - pxMin) * Math.pow(s.t, 0.65);
@@ -306,7 +304,7 @@ function buildStarLayer() {
   }
 }
 
-/* ====== 流れ星ロジック ====== */
+/* 流れ星 */
 function spawnMeteor() {
   if (!cssW || !cssH) return;
 
@@ -315,8 +313,8 @@ function spawnMeteor() {
   const size = Math.min(w, h);
 
   const angle = Math.random() * Math.PI * 2;
-  const len   = (0.3 + Math.random() * 0.4) * size;      // 0.3〜0.7倍の長さ
-  const speed = len / (0.7 + Math.random() * 0.6);       // 0.7〜1.3秒で走り抜ける
+  const len   = (0.3 + Math.random() * 0.4) * size;
+  const speed = len / (0.7 + Math.random() * 0.6);
   const life  = len / speed;
 
   const x0 = Math.random() * w;
@@ -354,9 +352,7 @@ function drawFrame() {
   if (!cssW || !cssH) return;
   ctx.clearRect(0, 0, cssW, cssH);
 
-  if (starLayer) {
-    ctx.drawImage(starLayer, 0, 0, cssW, cssH);
-  }
+  if (starLayer) ctx.drawImage(starLayer, 0, 0, cssW, cssH);
 
   if (!meteors.length) return;
 
@@ -379,7 +375,7 @@ function drawFrame() {
   ctx.restore();
 }
 
-/* ====== メインループ ====== */
+/* ループ */
 let lastTime = null;
 function loop(timestamp) {
   if (lastTime == null) lastTime = timestamp;
@@ -392,7 +388,6 @@ function loop(timestamp) {
   requestAnimationFrame(loop);
 }
 
-/* ====== ユーティリティ ====== */
 function loadImage(src) {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -403,7 +398,6 @@ function loadImage(src) {
   });
 }
 
-/* ====== 起動 ====== */
 start().catch(err => console.error('star build error:', err));
 </script>
 </body>
