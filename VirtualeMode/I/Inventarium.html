@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Inventarium</title>
+  <title>#i</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <style>
     :root{
@@ -10,11 +10,9 @@
       --fg:#7F7F7F;
       --white:#FFF;
       --radius:26.5px;
-      --thumbSize:96px;              /* サムネ額の一辺 */
-      --sqrt2:1.41421356237;         /* √2 */
     }
 
-    /* ページ全体：黒背景＋Græy外周＋角丸 */
+    /* ϻiapolVo 共通の黒 + Græy 外周 + 角丸 */
     html,body{
       margin:0;
       height:100%;
@@ -23,207 +21,220 @@
       font-family:Georgia,serif;
     }
     body{
-      height:100vh;                 /* 全画面フィット */
       border-radius:var(--radius);
       outline:12px solid #7f7f7f;   /* Græy 外周 */
-      box-shadow:0 0 0 0px #fff inset; /* 内側白枠（今は0pxで実質なし） */
+      box-shadow:0 0 0 0px #fff inset;
       overflow:hidden;
     }
 
-    a{ color:inherit; text-decoration:none; }
-
-    /* レイアウト：上にメイン、下にサムネ列 */
-    .stage{
-      min-height:100vh;
+    /* 中央縦長カラム */
+    .wrap{
+      min-height:100dvh;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-sizing:border-box;
+      padding:24px;
+    }
+    .column{
+      width:min(90vw,340px);
       display:flex;
       flex-direction:column;
-      box-sizing:border-box;
-    }
-
-    .main-area{
-      flex:1;
-      display:flex;
-      align-items:center;           /* 縦方向センター */
-      justify-content:center;       /* 横方向センター */
-      padding:16px;
-      box-sizing:border-box;
-    }
-
-    .main-frame{
-      max-width: min(90vw, 90vh);   /* 画面に収まるように */
-      max-height:min(90vh, 90vw);
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      background:#000;
-    }
-    .main-frame img{
-      max-width:100%;
-      max-height:100%;
-      object-fit:contain;
-      image-rendering:auto;
-    }
-
-    /* サムネイルバー：下部にグリッド */
-    .thumb-bar{
-      padding:8px 12px 16px;
-      box-sizing:border-box;
-      overflow-x:auto;
-      overflow-y:hidden;
-    }
-    .thumb-grid{
-      display:grid;
-      grid-auto-flow:column;          /* 横方向に流れる */
-      grid-auto-columns:var(--thumbSize);
-      gap:8px;
+      gap:16px;
       align-items:center;
     }
 
-    .thumb{
-      width:var(--thumbSize);
-      height:var(--thumbSize);
-      background:var(--fg);          /* Græy 額 */
+    /* 額（共通） */
+    .frame{
+      position:relative;
+      width:100%;
+      aspect-ratio:1/1;
+      background:var(--fg);
       display:flex;
       align-items:center;
       justify-content:center;
       overflow:hidden;
-      cursor:pointer;
     }
-
-    /* Femme：ダイヤモンド額 */
-    .thumb.femme{
-      transform:rotate(45deg);       /* 額を回転してダイヤに */
-    }
-    .thumb.femme .inner{
-      width:100%;
-      height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      transform:rotate(-45deg);      /* 中身を戻す */
-    }
-
-    /* Homme：そのまま正方形額 */
-    .thumb.homme .inner{
-      width:100%;
-      height:100%;
-      display:flex;
-      align-items:center;
-      justify-content:center;
-    }
-
-    /* サムネ画像：長辺 = 額の 1/√2 になるように */
-    .thumb img{
-      max-width: calc(100% / var(--sqrt2));
-      max-height:calc(100% / var(--sqrt2));
-      object-fit:contain;
-      image-rendering:auto;
+    .frame img{
       display:block;
+      object-fit:contain;
+      max-width:100%;
+      max-height:100%;
+      transition:transform .18s ease, max-width .18s ease, max-height .18s ease;
     }
 
-    /* 選択中のサムネに少しだけ強調（任意） */
-    .thumb.is-active{
-      box-shadow:0 0 0 1px var(--white);
+    /* 大枠：縦長 1 : 1.618 */
+    .hero{
+      width:100%;
+      aspect-ratio:1/1.618;
     }
 
-    /* 小さい画面での安全余白 */
-    @supports (min-height: 100dvh){
-      .stage{ min-height:100dvh; }
+    /* サムネイル 3列グリッド（合計 144） */
+    .thumbs{
+      width:100%;
+      display:grid;
+      grid-template-columns:repeat(3, 1fr);
+      gap:8px;
+    }
+    .thumb{
+      cursor:pointer;
+      border:none;
+      padding:0;
+      background:transparent;
+    }
+
+    /* ───────── Femme / Homme モード ───────── */
+
+    /* Femme: 額を45°回転したダイヤ、画像を -45° で戻す。
+       角にぴったり来るよう 140% まで拡大。 */
+    body.femme .frame{
+      transform:rotate(45deg);
+    }
+    body.femme .frame img{
+      transform:rotate(-45deg);
+      max-width:140%;
+      max-height:140%;
+    }
+
+    /* Homme: 正方形の中に長辺を 1/√2 に縮小して配置 */
+    body.homme .frame{
+      transform:none;
+    }
+    body.homme .frame img{
+      transform:none;
+      max-width:calc(100% / 1.41421356237);
+      max-height:calc(100% / 1.41421356237);
+    }
+
+    /* キャプション */
+    .label{
+      margin-top:8px;
+      font-size:12px;
+      opacity:.85;
+    }
+
+    /* 右上モード切替 UI（Femme / Homme） */
+    .mode-toggle{
+      position:fixed;
+      top:10px;
+      right:16px;
+      display:flex;
+      gap:6px;
+      font-size:12px;
+      z-index:20;
+    }
+    .mode-btn{
+      border:none;
+      padding:2px 4px;
+      background:transparent;
+      color:var(--fg);
+      cursor:pointer;
+      font:inherit;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .mode-btn[data-active="true"]{
+      color:var(--white);
     }
   </style>
 </head>
-<body>
-  <div class="stage">
-    <!-- 中央原寸表示 -->
-    <section class="main-area">
-      <div class="main-frame">
-        <img id="mainImage" src="" alt="#i main" loading="eager" />
-      </div>
-    </section>
 
-    <!-- 下部サムネ一覧 -->
-    <section class="thumb-bar">
-      <div id="thumbGrid" class="thumb-grid" aria-label="Thumbnails"></div>
-    </section>
+<body class="femme"> <!-- 初期状態は Femme にしています -->
+  <!-- Femme / Homme トグル -->
+  <div class="mode-toggle" aria-label="display mode">
+    <button id="btnFemme" class="mode-btn" data-active="true">Femme</button>
+    /
+    <button id="btnHomme" class="mode-btn">Homme</button>
   </div>
 
-  <script>
-    /* ========== 画像データ ========== */
-    // ここに 145 枚ぶんを定義してください。
-    // type: "femme" ならダイヤ、"homme" なら正方額で表示されます。
-    const IMAGES = [
-      // 例：
-      { id:"i-0001", type:"femme", thumb:"img/i/i-0001.webp", full:"img/i/i-0001-full.jpg" },
-      { id:"i-0002", type:"homme", thumb:"img/i/i-0002.webp", full:"img/i/i-0002-full.jpg" },
-      // … この要領で 145 件
-    ];
+  <main class="wrap">
+    <section class="column" aria-label="#i gallery">
+      <!-- 大枠：original を表示。クリックで原寸を新タブ -->
+      <a class="frame hero" id="heroLink" href="#" target="_blank" rel="noopener">
+        <img id="heroImg" src="" alt="#i drawing" loading="eager" decoding="async">
+      </a>
 
-    /* ========== ユーティリティ（省エネな単純シャッフル） ========== */
+      <!-- 144枚のサムネイル -->
+      <div class="thumbs" id="thumbs" aria-label="thumbnails"></div>
+
+      <div class="label">ineffabilis / ineffable / ineffabile / inefavlo</div>
+    </section>
+  </main>
+
+  <script>
+    /* ==== 画像データ：同じリポジトリ内の JSON から読み込む ==== */
+    // 例：./i-images.json
+    const DATA_URL = 'i-images.json';
+
+    const heroImg  = document.getElementById('heroImg');
+    const heroLink = document.getElementById('heroLink');
+    const thumbsEl = document.getElementById('thumbs');
+
+    const btnFemme = document.getElementById('btnFemme');
+    const btnHomme = document.getElementById('btnHomme');
+
+    /* ---- Femme / Homme の UI 切替 ---- */
+    function setMode(mode){
+      const isFemme = mode === 'femme';
+      document.body.classList.toggle('femme', isFemme);
+      document.body.classList.toggle('homme', !isFemme);
+      btnFemme.dataset.active = isFemme ? 'true' : 'false';
+      btnHomme.dataset.active = !isFemme ? 'true' : 'false';
+    }
+
+    btnFemme.addEventListener('click', ()=> setMode('femme'));
+    btnHomme.addEventListener('click', ()=> setMode('homme'));
+
+    /* ---- ギャラリー部分 ---- */
+
     function shuffle(arr){
       const a = arr.slice();
-      for(let i = a.length - 1; i > 0; i--){
-        const j = Math.floor(Math.random() * (i + 1));
-        [a[i], a[j]] = [a[j], a[i]];
+      for(let i=a.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [a[i],a[j]] = [a[j],a[i]];
       }
       return a;
     }
 
-    const mainImage = document.getElementById('mainImage');
-    const thumbGrid = document.getElementById('thumbGrid');
+    function setHero(item){
+      heroImg.src = item.original;
+      heroImg.alt = item.title || '#i drawing';
+      heroLink.href = item.original;
+    }
 
-    let currentId = null;
+    function render(list){
+      const shuffled = shuffle(list);
+      const [first, ...rest] = shuffled;
 
-    function setMain(item){
-      currentId = item.id;
-      // メインには原寸（full）を使用。なければ thumb をフォールバック
-      mainImage.src = item.full || item.thumb;
-      mainImage.alt = item.id || "#i image";
+      setHero(first);
 
-      // サムネの選択状態を更新
-      thumbGrid.querySelectorAll('.thumb').forEach(el=>{
-        el.classList.toggle('is-active', el.dataset.id === currentId);
+      thumbsEl.innerHTML = '';
+      rest.forEach(item=>{
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'frame thumb';
+
+        const img = document.createElement('img');
+        img.src = item.thumb || item.original;
+        img.alt = item.title || '';
+        img.loading  = 'lazy';
+        img.decoding = 'async';
+
+        btn.appendChild(img);
+        btn.addEventListener('click', ()=> setHero(item));
+        thumbsEl.appendChild(btn);
       });
     }
 
-    function buildThumb(item){
-      const thumb = document.createElement('button');
-      thumb.type = 'button';
-      thumb.className = 'thumb ' + (item.type === 'femme' ? 'femme' : 'homme');
-      thumb.dataset.id = item.id;
-
-      const inner = document.createElement('div');
-      inner.className = 'inner';
-
-      const img = document.createElement('img');
-      img.src = item.thumb;
-      img.alt = item.id || "thumb";
-      img.loading = 'lazy';
-      img.decoding = 'async';
-
-      inner.appendChild(img);
-      thumb.appendChild(inner);
-
-      thumb.addEventListener('click', ()=>{
-        setMain(item);
-      });
-
-      return thumb;
-    }
-
-    // 初期化：145枚をランダム配置し、先頭をメインに
-    (function init(){
-      if(!IMAGES.length) return;
-      const shuffled = shuffle(IMAGES);
-
-      // メイン決定
-      setMain(shuffled[0]);
-
-      // サムネ生成
-      shuffled.forEach((item, index)=>{
-        const el = buildThumb(item);
-        if(index === 0) el.classList.add('is-active');
-        thumbGrid.appendChild(el);
-      });
+    (async ()=>{
+      try{
+        const res  = await fetch(DATA_URL);
+        const data = await res.json();  // 145件（original, thumb）だけ
+        render(data);
+      }catch(e){
+        console.error(e);
+      }
+      // 初期モード（Femme）
+      setMode('femme');
     })();
   </script>
 </body>
