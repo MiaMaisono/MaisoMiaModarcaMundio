@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>#i</title>
+  <title>Inventarium</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <style>
     :root{
@@ -10,9 +10,13 @@
       --fg:#7F7F7F;
       --white:#FFF;
       --radius:26.5px;
+
+      /* 左右カラム幅（fr 単位）。初期は 1 : 1 = 50% : 50% */
+      --left-fr:1;
+      --right-fr:1;
     }
 
-    /* ϻiapolVo 共通の黒 + Græy 外周 + 角丸 */
+    /* 共通：黒背景＋Græy 外周＋角丸 */
     html,body{
       margin:0;
       height:100%;
@@ -22,22 +26,30 @@
     }
     body{
       border-radius:var(--radius);
-      outline:12px solid #7f7f7f;   /* Græy 外周 */
-      box-shadow:0 0 0 0px #fff inset;
+      outline:12px solid #7f7f7f;      /* Græy 外周 */
+      box-shadow:0 0 0 0px #fff inset; /* 内側白枠（必要なら維持）*/
       overflow:hidden;
     }
 
-    /* 中央縦長カラム */
-    .wrap{
+    /* 2カラムレイアウト（左右比率は CSS 変数で制御） */
+    .split{
       min-height:100dvh;
+      display:grid;
+      grid-template-columns:minmax(0, calc(var(--left-fr)*1fr))
+                            minmax(0, calc(var(--right-fr)*1fr));
+      gap:0;
+    }
+
+    .pane{
       display:flex;
       align-items:center;
       justify-content:center;
-      box-sizing:border-box;
       padding:24px;
+      box-sizing:border-box;
     }
+
     .column{
-      width:min(90vw,340px);
+      width:min(90vw, 360px);
       display:flex;
       flex-direction:column;
       gap:16px;
@@ -48,7 +60,7 @@
     .frame{
       position:relative;
       width:100%;
-      aspect-ratio:1/1;
+      aspect-ratio:1/1;         /* ベースは正方形 */
       background:var(--fg);
       display:flex;
       align-items:center;
@@ -60,60 +72,79 @@
       object-fit:contain;
       max-width:100%;
       max-height:100%;
-      transition:transform .18s ease, max-width .18s ease, max-height .18s ease;
+      transition:transform .18s ease,
+                 max-width .18s ease,
+                 max-height .18s ease;
     }
 
-    /* 大枠：縦長 1 : 1.618 */
+    /* 大枠（hero）：縦長に見せたいので wrapper を伸ばす */
+    .hero-wrap{
+      width:100%;
+      aspect-ratio:1/1.618;  /* 見た目としての縦長。中の .frame は中央に置く */
+      display:flex;
+      align-items:center;
+      justify-content:center;
+    }
     .hero{
       width:100%;
-      aspect-ratio:1/1.618;
+      height:100%;
     }
 
-    /* サムネイル 3列グリッド（合計 144） */
+    /* サムネイル：3列グリッド（残り 144枚） */
     .thumbs{
       width:100%;
       display:grid;
       grid-template-columns:repeat(3, 1fr);
       gap:8px;
     }
-    .thumb{
-      cursor:pointer;
+    .thumb-btn{
       border:none;
       padding:0;
       background:transparent;
+      cursor:pointer;
+    }
+    .thumb{
+      width:100%;
+      aspect-ratio:1/1;
+    }
+    .thumb img{
+      width:100%;
+      height:100%;
+      object-fit:contain;
+      display:block;
     }
 
-    /* ───────── Femme / Homme モード ───────── */
+    .label{
+      font-size:12px;
+      opacity:.85;
+      text-align:center;
+    }
 
-    /* Femme: 額を45°回転したダイヤ、画像を -45° で戻す。
+    /* ───────── Femme / Homme の見た目 ───────── */
+
+    /* Femme 側：ダイヤモンド額（45°回転）＋画像を -45° で戻す。
        角にぴったり来るよう 140% まで拡大。 */
-    body.femme .frame{
+    .pane[data-role="femme"] .frame{
       transform:rotate(45deg);
     }
-    body.femme .frame img{
+    .pane[data-role="femme"] .frame img{
       transform:rotate(-45deg);
       max-width:140%;
       max-height:140%;
     }
 
-    /* Homme: 正方形の中に長辺を 1/√2 に縮小して配置 */
-    body.homme .frame{
+    /* Homme 側：正方形額の中で長辺を 1/√2 に縮小して中央配置 */
+    .pane[data-role="homme"] .frame{
       transform:none;
     }
-    body.homme .frame img{
+    .pane[data-role="homme"] .frame img{
       transform:none;
       max-width:calc(100% / 1.41421356237);
       max-height:calc(100% / 1.41421356237);
     }
 
-    /* キャプション */
-    .label{
-      margin-top:8px;
-      font-size:12px;
-      opacity:.85;
-    }
+    /* ───────── モード切替 UI ───────── */
 
-    /* 右上モード切替 UI（Femme / Homme） */
     .mode-toggle{
       position:fixed;
       top:10px;
@@ -135,83 +166,104 @@
     .mode-btn[data-active="true"]{
       color:var(--white);
     }
+
+    /* スマホで縦が極端に狭い場合に少し余白を詰める */
+    @media (max-height:640px){
+      .pane{
+        padding:12px;
+      }
+      .column{
+        gap:10px;
+      }
+    }
   </style>
 </head>
 
-<body class="femme"> <!-- 初期状態は Femme にしています -->
-  <!-- Femme / Homme トグル -->
-  <div class="mode-toggle" aria-label="display mode">
-    <button id="btnFemme" class="mode-btn" data-active="true">Femme</button>
+<body>
+  <!-- Femme / Homme 選択ボタン -->
+  <div class="mode-toggle" aria-label="display ratio mode">
+    <button id="btnFemme" class="mode-btn" data-active="false">Femme</button>
     /
-    <button id="btnHomme" class="mode-btn">Homme</button>
+    <button id="btnHomme" class="mode-btn" data-active="false">Homme</button>
   </div>
 
-  <main class="wrap">
-    <section class="column" aria-label="#i gallery">
-      <!-- 大枠：original を表示。クリックで原寸を新タブ -->
-      <a class="frame hero" id="heroLink" href="#" target="_blank" rel="noopener">
-        <img id="heroImg" src="" alt="#i drawing" loading="eager" decoding="async">
-      </a>
+  <!-- 左右 2カラム（どちらが Femme / Homme になるかは JS でランダム割当） -->
+  <main class="split">
+    <section class="pane" id="paneLeft"  data-side="left">
+      <div class="column">
+        <div class="hero-wrap">
+          <a class="frame hero" id="heroLeftLink" href="#" target="_blank" rel="noopener">
+            <img id="heroLeftImg" src="" alt="#i drawing left" loading="eager" decoding="async">
+          </a>
+        </div>
+        <div class="thumbs" id="thumbsLeft"></div>
+        <div class="label">ineffabilis / ineffable / ineffabile / inefavlo</div>
+      </div>
+    </section>
 
-      <!-- 144枚のサムネイル -->
-      <div class="thumbs" id="thumbs" aria-label="thumbnails"></div>
-
-      <div class="label">ineffabilis / ineffable / ineffabile / inefavlo</div>
+    <section class="pane" id="paneRight" data-side="right">
+      <div class="column">
+        <div class="hero-wrap">
+          <a class="frame hero" id="heroRightLink" href="#" target="_blank" rel="noopener">
+            <img id="heroRightImg" src="" alt="#i drawing right" loading="eager" decoding="async">
+          </a>
+        </div>
+        <div class="thumbs" id="thumbsRight"></div>
+        <div class="label">ineffabilis / ineffable / ineffabile / inefavlo</div>
+      </div>
     </section>
   </main>
 
   <script>
-    /* ==== 画像データ：同じリポジトリ内の JSON から読み込む ==== */
-    // 例：./i-images.json
-    const DATA_URL = 'i-images.json';
+    /* ===== 画像データ（145枚）を同じ JSON から読み込む ===== */
 
-    const heroImg  = document.getElementById('heroImg');
-    const heroLink = document.getElementById('heroLink');
-    const thumbsEl = document.getElementById('thumbs');
+    const DATA_URL = 'i-images.json'; // 同じディレクトリに置いてください
+
+    // 左右の hero / thumbs 参照
+    const heroLeftImg   = document.getElementById('heroLeftImg');
+    const heroLeftLink  = document.getElementById('heroLeftLink');
+    const thumbsLeftEl  = document.getElementById('thumbsLeft');
+
+    const heroRightImg  = document.getElementById('heroRightImg');
+    const heroRightLink = document.getElementById('heroRightLink');
+    const thumbsRightEl = document.getElementById('thumbsRight');
+
+    const paneLeft  = document.getElementById('paneLeft');
+    const paneRight = document.getElementById('paneRight');
 
     const btnFemme = document.getElementById('btnFemme');
     const btnHomme = document.getElementById('btnHomme');
 
-    /* ---- Femme / Homme の UI 切替 ---- */
-    function setMode(mode){
-      const isFemme = mode === 'femme';
-      document.body.classList.toggle('femme', isFemme);
-      document.body.classList.toggle('homme', !isFemme);
-      btnFemme.dataset.active = isFemme ? 'true' : 'false';
-      btnHomme.dataset.active = !isFemme ? 'true' : 'false';
-    }
-
-    btnFemme.addEventListener('click', ()=> setMode('femme'));
-    btnHomme.addEventListener('click', ()=> setMode('homme'));
-
-    /* ---- ギャラリー部分 ---- */
+    // どちらのサイドが Femme かを保持
+    let femmeOnLeft = true; // 初期値、あとで乱数で上書き
 
     function shuffle(arr){
       const a = arr.slice();
       for(let i=a.length-1;i>0;i--){
         const j = Math.floor(Math.random()*(i+1));
-        [a[i],a[j]] = [a[j],a[i]];
+        [a[i], a[j]] = [a[j], a[i]];
       }
       return a;
     }
 
-    function setHero(item){
-      heroImg.src = item.original;
-      heroImg.alt = item.title || '#i drawing';
-      heroLink.href = item.original;
-    }
+    function buildGallery(heroImg, heroLink, thumbsEl, list){
+      const [first, ...rest] = list;
 
-    function render(list){
-      const shuffled = shuffle(list);
-      const [first, ...rest] = shuffled;
-
+      function setHero(item){
+        heroImg.src = item.original;
+        heroImg.alt = item.title || '#i drawing';
+        heroLink.href = item.original;
+      }
       setHero(first);
 
       thumbsEl.innerHTML = '';
       rest.forEach(item=>{
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'frame thumb';
+        btn.className = 'thumb-btn';
+
+        const frame = document.createElement('div');
+        frame.className = 'frame thumb';
 
         const img = document.createElement('img');
         img.src = item.thumb || item.original;
@@ -219,22 +271,101 @@
         img.loading  = 'lazy';
         img.decoding = 'async';
 
-        btn.appendChild(img);
+        frame.appendChild(img);
+        btn.appendChild(frame);
+
         btn.addEventListener('click', ()=> setHero(item));
         thumbsEl.appendChild(btn);
       });
     }
 
+    /* ===== 左右どちらを Femme / Homme にするかランダム割当 ===== */
+    function assignSidesRandom(){
+      femmeOnLeft = Math.random() < 0.5;
+
+      if (femmeOnLeft){
+        paneLeft.dataset.role  = 'femme';
+        paneRight.dataset.role = 'homme';
+      }else{
+        paneLeft.dataset.role  = 'homme';
+        paneRight.dataset.role = 'femme';
+      }
+
+      // 初期の幅は 1 : 1
+      document.documentElement.style.setProperty('--left-fr',  '1');
+      document.documentElement.style.setProperty('--right-fr', '1');
+      btnFemme.dataset.active = 'false';
+      btnHomme.dataset.active = 'false';
+    }
+
+    /* ===== 比率を変更する関数 =====
+       mode === 'femme' のとき：Femme 側 : Homme 側 = φ : 1
+       mode === 'homme' のとき：Homme 側 : Femme 側 = √2 : 1
+    */
+    const PHI = 1.61803398;
+    const SQRT2 = 1.41421356;
+
+    function setRatio(mode){
+      let leftFr = 1;
+      let rightFr = 1;
+
+      if (mode === 'femme'){
+        // Femme : Homme = φ : 1
+        if (femmeOnLeft){
+          leftFr  = PHI;
+          rightFr = 1;
+        }else{
+          leftFr  = 1;
+          rightFr = PHI;
+        }
+        btnFemme.dataset.active = 'true';
+        btnHomme.dataset.active = 'false';
+      }else if (mode === 'homme'){
+        // Homme : Femme = √2 : 1
+        if (femmeOnLeft){
+          // 左が Femme, 右が Homme
+          leftFr  = 1;
+          rightFr = SQRT2;
+        }else{
+          // 左が Homme, 右が Femme
+          leftFr  = SQRT2;
+          rightFr = 1;
+        }
+        btnFemme.dataset.active = 'false';
+        btnHomme.dataset.active = 'true';
+      }else{
+        // safety: 50:50 に戻す
+        leftFr = rightFr = 1;
+        btnFemme.dataset.active = 'false';
+        btnHomme.dataset.active = 'false';
+      }
+
+      document.documentElement.style.setProperty('--left-fr',  String(leftFr));
+      document.documentElement.style.setProperty('--right-fr', String(rightFr));
+    }
+
+    /* ボタン動作 */
+    btnFemme.addEventListener('click', ()=> setRatio('femme'));
+    btnHomme.addEventListener('click', ()=> setRatio('homme'));
+
+    /* ===== 初期化 ===== */
     (async ()=>{
+      assignSidesRandom(); // まず左右どちらが Femme / Homme か決める
+
       try{
-        const res  = await fetch(DATA_URL);
-        const data = await res.json();  // 145件（original, thumb）だけ
-        render(data);
+        const res = await fetch(DATA_URL);
+        const data = await res.json();       // 145件想定
+        const shuffled = shuffle(data);      // 両サイドとも同じ並びを使う
+
+        // 左右それぞれにギャラリーを構築
+        buildGallery(heroLeftImg,  heroLeftLink,  thumbsLeftEl,  shuffled);
+        buildGallery(heroRightImg, heroRightLink, thumbsRightEl, shuffled);
       }catch(e){
         console.error(e);
       }
-      // 初期モード（Femme）
-      setMode('femme');
+
+      // 初期状態は比率 1 : 1（ボタン非選択）のまま
+      setRatio(null);
     })();
   </script>
 </body>
