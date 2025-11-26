@@ -4,18 +4,22 @@
   <meta charset="UTF-8" />
   <title>Inventarium</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
   <style>
+    /* ===============================
+       ここが CSS（見た目の指定）
+       =============================== */
     :root{
       --bg:#000;
       --fg:#7F7F7F;
       --white:#FFF;
       --radius:26.5px;
-      --phiInv:0.61803398875;   /* width / height for Femme  (1 / 1.618) */
-      --rt2Inv:0.70710678118;   /* width / height for Homme  (1 / 1.414) */
+      --phi:1.618033988;     /* Femme 縦横比 */
+      --rt2:1.414213562;     /* Homme 縦横比 */
     }
 
-    /* 画面の土台：Inventarium と同じ「黒 + 角丸 + Græy外周 + 白インナー」 */
-    html, body{
+    /* 画面全体（Græy の角丸＋外周） */
+    html,body{
       margin:0;
       height:100%;
       background:var(--bg);
@@ -25,161 +29,216 @@
     body{
       border-radius:var(--radius);
       outline:12px solid #7f7f7f;      /* Græy 外周 */
-      box-shadow:0 0 0 0px #fff inset; /* 内側白枠（不要なら消してOK） */
+      box-shadow:0 0 0 0px #fff inset; /* 内側白枠（今は 0px） */
       overflow:hidden;
     }
 
-    /* 全体レイアウト：上にタブ、中央にキャンバス、下にキャプション */
-    .stage{
-      min-height:100vh;
+    /* 全体レイアウト：上下にヘッダー／中身／フッター */
+    .shell{
+      height:100%;
       display:flex;
       flex-direction:column;
     }
 
-    /* ── 上：Femme / Homme タブ ─────────────────── */
-    .tabs{
+    header{
       padding:8px 18px;
-      display:flex;
-      justify-content:flex-end;
-      align-items:center;
-      gap:8px;
       font-size:14px;
+      text-align:right;
     }
-    .tabs span.sep{
-      opacity:.7;
-    }
-    .tab-btn{
-      appearance:none;
-      border:none;
-      background:transparent;
-      color:var(--fg);
-      font:inherit;
-      padding:0 4px;
-      cursor:pointer;
-    }
-    .tab-btn[data-active="true"]{
+    header span.current{
       color:var(--white);
     }
 
-    /* ── 中央：キャンバス ─────────────────────── */
-    .center{
+    footer{
+      padding:12px 0 18px;
+      text-align:center;
+      font-size:12px;
+      opacity:.9;
+    }
+
+    /* 中央：左右 2 カラム（常に 50% : 50%） */
+    .columns{
       flex:1;
       display:flex;
-      align-items:center;
-      justify-content:center;
-      padding:16px;
+      padding:8px 18px 0;
       box-sizing:border-box;
+      gap:18px;
     }
-
-    /* Femme / Homme 共通のコンテナ */
-    .panel{
-      display:none; /* JSで is-active だけ表示 */
-      align-items:center;
-      justify-content:center;
-      max-width:100%;
-      max-height:100%;
-    }
-    .panel.is-active{
+    .col{
+      flex:1;
       display:flex;
+      justify-content:center;
+      align-items:center;
     }
 
-    /* 実際の額縁＝ここにあとで 145 枚レイアウトを入れる */
+    /* 共通：額縁の黒い背景 */
     .frame{
-      background:#7f7f7f;   /* Græy キャンバス */
+      width:100%;
+      max-width:320px;
+      background:#000;
+      padding:8px;
+      box-sizing:border-box;
       display:flex;
-      align-items:center;
       justify-content:center;
-      overflow:hidden;
+      align-items:center;
     }
 
-    /* Femme：縦長 (高さ : 幅 ≒ 1.618 : 1) → width/height = 1/φ */
-    .panel--femme .frame{
-      aspect-ratio:var(--phiInv);
-      /* 画面の縦横どちらでも収まるように */
-      width:min(70vw, 70vh * var(--phiInv));
-      max-height:80vh;
+    /* ===============================
+       Femme（ダイヤ配置・縦長 1 : 1.618）
+       =============================== */
+    .femme-grid{
+      width:100%;
+      aspect-ratio:calc(1/var(--phi));
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      grid-auto-rows:1fr;
+      place-items:center;
+      gap:4px;
     }
 
-    /* Homme：縦長 (高さ : 幅 ≒ 1.414 : 1) → width/height = 1/√2 */
-    .panel--homme .frame{
-      aspect-ratio:var(--rt2Inv);
-      width:min(70vw, 70vh * var(--rt2Inv));
-      max-height:80vh;
+    .femme-cell{
+      width:88%;
+      aspect-ratio:1;
+      background:#444;
+      transform:rotate(45deg);  /* ひし形に見せる */
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      font-size:8px;
     }
 
-    /* ひとまず中身はプレースホルダーテキスト */
-    .placeholder{
-      font-size:18px;
-      color:#3b2d5f;
-      background:rgba(0,0,0,0.15);
-      padding:4px 10px;
+    /* 中央の一枚（原寸枠） */
+    .femme-cell.main{
+      width:100%;
+      background:#777;
     }
 
-    /* ── 下：キャプション ─────────────────────── */
-    .caption{
-      padding:12px 24px 18px;
-      text-align:center;
-      font-size:13px;
+    /* ===============================
+       Homme（正方形グリッド・縦長 1 : 1.414）
+       =============================== */
+    .homme-grid{
+      width:100%;
+      aspect-ratio:calc(1/var(--rt2));
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      grid-auto-rows:1fr;
+      gap:4px;
+    }
+
+    .homme-cell{
+      width:88%;
+      aspect-ratio:1;
+      background:#555;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      font-size:8px;
+    }
+
+    .homme-cell.main{
+      width:100%;
+      background:#777;
+    }
+
+    /* スマホで縦に潰れすぎる場合の保険（幅が狭い時は上下に積む） */
+    @media (max-width:700px){
+      .columns{
+        flex-direction:column;
+      }
+      .frame{
+        max-width:none;
+      }
     }
   </style>
 </head>
+
 <body>
-  <div class="stage">
-    <!-- 上：タブ -->
-    <header class="tabs">
-      <button class="tab-btn" id="tabFemme" data-mode="femme">Femme</button>
-      <span class="sep">/</span>
-      <button class="tab-btn" id="tabHomme" data-mode="homme">Homme</button>
+  <div class="shell">
+    <header>
+      <!-- ラベルは JS から書き込む -->
+      <span id="label-left"></span>
+      <span> / </span>
+      <span id="label-right"></span>
     </header>
 
-    <!-- 中央：モードごとの額縁（1つだけ表示される） -->
-    <main class="center">
-      <!-- Femme モード -->
-      <section class="panel panel--femme" id="panelFemme" aria-label="Femme drawings">
-        <div class="frame">
-          <!-- ここに 145枚レイアウトを組み込む -->
-          <span class="placeholder">#i Femme canvas</span>
-        </div>
-      </section>
-
-      <!-- Homme モード -->
-      <section class="panel panel--homme" id="panelHomme" aria-label="Homme drawings">
-        <div class="frame">
-          <!-- ここに 145枚レイアウトを組み込む -->
-          <span class="placeholder">#i Homme canvas</span>
-        </div>
-      </section>
+    <main class="columns">
+      <section id="col-left"  class="col"></section>
+      <section id="col-right" class="col"></section>
     </main>
 
-    <!-- 下：キャプション -->
-    <footer class="caption">
+    <footer>
       ineffabilis / ineffable / ineffabile / inefavlo
     </footer>
   </div>
 
   <script>
-    // タブとパネルを紐づけ
-    const tabF  = document.getElementById('tabFemme');
-    const tabH  = document.getElementById('tabHomme');
-    const panF  = document.getElementById('panelFemme');
-    const panH  = document.getElementById('panelHomme');
+    // ===============================
+    // ここが JS（動きの部分）
+    // ===============================
 
-    function setMode(mode){
-      const femmeActive = (mode === 'femme');
+    const TOTAL = 145;          // セルの総数
+    const MAIN_INDEX = 0;       // 「原寸枠」にするセル（仮に 0 番）
 
-      panF.classList.toggle('is-active', femmeActive);
-      panH.classList.toggle('is-active', !femmeActive);
+    // FEMME / HOMME の左右をランダムに決める
+    const leftIsFemme = Math.random() < 0.5;
 
-      tabF.dataset.active = femmeActive ? "true" : "false";
-      tabH.dataset.active = femmeActive ? "false" : "true";
+    const colLeft  = document.getElementById('col-left');
+    const colRight = document.getElementById('col-right');
+    const labelLeft  = document.getElementById('label-left');
+    const labelRight = document.getElementById('label-right');
+
+    if (leftIsFemme) {
+      colLeft.appendChild(makeFemmeFrame());
+      colRight.appendChild(makeHommeFrame());
+      labelLeft.textContent  = 'Femme';
+      labelRight.textContent = 'Homme';
+      labelLeft.classList.add('current');
+    } else {
+      colLeft.appendChild(makeHommeFrame());
+      colRight.appendChild(makeFemmeFrame());
+      labelLeft.textContent  = 'Homme';
+      labelRight.textContent = 'Femme';
+      labelRight.classList.add('current');
     }
 
-    // 初期状態：50% : 50% でランダム
-    const initial = Math.random() < 0.5 ? 'femme' : 'homme';
-    setMode(initial);
+    // ───── Femme の額縁 ─────
+    function makeFemmeFrame(){
+      const frame = document.createElement('div');
+      frame.className = 'frame';
 
-    tabF.addEventListener('click', () => setMode('femme'));
-    tabH.addEventListener('click', () => setMode('homme'));
+      const grid = document.createElement('div');
+      grid.className = 'femme-grid';
+
+      for (let i = 0; i < TOTAL; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'femme-cell' + (i===MAIN_INDEX ? ' main' : '');
+        // いまはダミーテキスト。あとで画像を入れ替え。
+        // cell.textContent = i+1;
+        grid.appendChild(cell);
+      }
+
+      frame.appendChild(grid);
+      return frame;
+    }
+
+    // ───── Homme の額縁 ─────
+    function makeHommeFrame(){
+      const frame = document.createElement('div');
+      frame.className = 'frame';
+
+      const grid = document.createElement('div');
+      grid.className = 'homme-grid';
+
+      for (let i = 0; i < TOTAL; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'homme-cell' + (i===MAIN_INDEX ? ' main' : '');
+        // cell.textContent = i+1;
+        grid.appendChild(cell);
+      }
+
+      frame.appendChild(grid);
+      return frame;
+    }
   </script>
 </body>
 </html>
