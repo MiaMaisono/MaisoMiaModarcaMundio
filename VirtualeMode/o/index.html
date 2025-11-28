@@ -1,85 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>。</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <style>
-    :root {
-      --fg: #7F7F7F; /* Græy */
-      --bg: #000000; /* 中央楕円は常に真黒 */
-    }
+<meta charset="UTF-8" />
+<title>。</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --fg: #7F7F7F; /* Græy */
+    --bg: #000000; /* 中央円の黒 */
+  }
 
-    html, body {
-      height: 100%;
-      margin: 0;
-    }
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
 
-    /* 余白部分（楕円の外側）は JS で毎回ランダム色にする */
-    body {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      background-color: #000; /* 初期値。後で上書き */
-    }
+  /* 余白部分：毎回 JS からランダム色を設定する前提 */
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #000000; /* 初期値（JSで上書き） */
+  }
 
-    /* 画面全体を覆う楕円（正方形の画面なら真円） */
-    .circle {
-      position: relative;
-      width: 100vw;
-      height: 100vh;
-      border-radius: 50%;   /* ビューポートに内接する楕円 */
-      overflow: hidden;
-      background: var(--bg); /* 内側は完全黒 */
-    }
+  /* 中央の真円（画面短辺にフィット） */
+  .circle {
+    position: relative;
+    width: calc(min(100vw, 100vh) - 0px); /* ほぼ画面いっぱいの円 */
+    aspect-ratio: 1 / 1;
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--bg);   /* 内側は完全黒 */
+  }
 
-    /* 星空キャンバス（楕円の内側） */
-    #sky {
-      position: absolute;
-      inset: 0;
-      display: block;
-      background: #000;
-      z-index: 0;
-      pointer-events: none;
-    }
+  /* 星空キャンバス（円の内側） */
+  #sky {
+    position: absolute;
+    inset: 0;
+    display: block;
+    background: #000;
+    z-index: 0;
+    pointer-events: none;
+  }
 
-    /* 中央リンク */
-    .center {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      height: 100%;
-      display: grid;
-      place-items: center;
-    }
+  /* 中央リンク */
+  .center {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+  }
 
-    .links {
-      display: flex;
-      gap: 4em;
-    }
+  .links {
+    display: flex;
+    gap: 4em;
+  }
 
-    .links a {
-      text-decoration: none;
-      color: var(--fg);               /* Græy */
-      font-size: 3.14159265359em;
-      font-style: italic;
-      letter-spacing: 0.01em;
-      -webkit-tap-highlight-color: rgba(255,255,255,0.1);
-    }
+  .links a {
+    text-decoration: none;
+    color: #7F7F7F; /* Græy */
+    font-size: 3.14159265359em;
+    font-style: italic;
+    letter-spacing: 0.01em;
+    -webkit-tap-highlight-color: rgba(255,255,255,0.1);
+  }
 
-    .links a.femme { font-family: Futura, sans-serif; }
-    .links a.homme { font-family: Helvetica, Arial, sans-serif; }
+  .links a.femme { font-family: Futura, sans-serif; }
+  .links a.homme { font-family: Helvetica, Arial, sans-serif; }
 
-    .links a:hover {
-      text-decoration: underline;
-    }
+  .links a:hover { text-decoration: underline; }
 
-    .links a:focus-visible {
-      outline: 2px dashed var(--fg);
-      outline-offset: 6px;
-    }
-  </style>
+  .links a:focus-visible {
+    outline: 2px dashed #7F7F7F;
+    outline-offset: 6px;
+  }
+</style>
 </head>
 <body>
   <div class="circle">
@@ -97,219 +96,256 @@
     </div>
   </div>
 
-  <script>
-    /* =============================
-       1. 余白色を毎回ランダムに
-       ============================= */
-    (function setRandomBackground() {
-      const n = Math.floor(Math.random() * 0x1000000);     // 0〜16,777,215
-      const hex = n.toString(16).padStart(6, "0");
-      document.body.style.backgroundColor = "#" + hex;
-    })();
+<script>
+/* =========================
+   背景色を #000000〜#FFFFFF の中でランダムに
+   ========================= */
+(function setRandomBackground() {
+  try {
+    const n = Math.floor(Math.random() * 0x1000000); // 0〜16777215
+    const hex = n.toString(16).padStart(6, '0');
+    document.body.style.backgroundColor = '#' + hex;
+  } catch (e) {
+    // 失敗時は初期値の黒のまま
+  }
+})();
 
-    /* =============================
-       2. 星空と流れ星
-       ============================= */
+/* =========================
+   星レイヤー設定（7レイヤー）
+   ※ 合計 6236 個、7等星までの比率に準拠
+   ========================= */
+const STAR_LAYERS = [
+  { count: 2,    sizeMul: 1.50 }, // 最も明るい
+  { count: 5,    sizeMul: 1.30 },
+  { count: 19,   sizeMul: 1.10 },
+  { count: 74,   sizeMul: 0.90 },
+  { count: 294,  sizeMul: 0.70 },
+  { count: 1172, sizeMul: 0.55 },
+  { count: 4670, sizeMul: 0.40 }  // 最も暗い
+];
+const TOTAL_STARS = STAR_LAYERS.reduce((s, l) => s + l.count, 0); // 6236
 
-    const STAR_COUNT = 1200;        // 星の数
-    const STAR_COLOR = "#FFFFFF";   // 星は真っ白
-    const STORAGE_KEY = "mqc_meteor_attempts";
+const STAR_CHAR  = '⭐︎';
+const STAR_COLOR = '#FFFFFF';
 
-    const circle = document.querySelector(".circle");
-    const canvas = document.getElementById("sky");
-    const ctx = canvas.getContext("2d");
+/* =========================
+   キャンバス & レイアウト
+   ========================= */
+const container = document.querySelector('.circle');
+const canvas    = document.getElementById('sky');
+const ctx       = canvas.getContext('2d');
 
-    let cssW = 0, cssH = 0;
-    let dpr  = window.devicePixelRatio || 1;
+let cssW = 0, cssH = 0;
+let dpr  = window.devicePixelRatio || 1;
 
-    let starLayer = null;   // オフスクリーンに描いた静止星
-    let meteor = null;      // いま飛んでいる流れ星
-    let animId = null;
-    let lastTime = 0;
+let stars = [];   // { x: -0.5..0.5, y: -0.5..0.5, layer: 0..6 }
+let starLayer = null;
 
-    /* ---- レイアウト ---- */
-    function resizeCanvas() {
-      const rect = circle.getBoundingClientRect();
-      cssW = rect.width;
-      cssH = rect.height;
-      dpr  = window.devicePixelRatio || 1;
+function resizeCanvas() {
+  const rect = container.getBoundingClientRect();
+  cssW = rect.width;
+  cssH = rect.height;
+  dpr  = window.devicePixelRatio || 1;
 
-      canvas.width  = Math.max(1, Math.floor(cssW * dpr));
-      canvas.height = Math.max(1, Math.floor(cssH * dpr));
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  canvas.width  = Math.max(1, Math.floor(cssW * dpr));
+  canvas.height = Math.max(1, Math.floor(cssH * dpr));
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      buildStarLayer();
-      paintStatic();
+  if (!stars.length) {
+    initStars();
+  }
+  buildStarLayer();
+}
+
+window.addEventListener('resize', resizeCanvas, { passive: true });
+
+/* =========================
+   星データ生成（7レイヤー）
+   ========================= */
+function initStars() {
+  stars = [];
+  STAR_LAYERS.forEach((layer, layerIndex) => {
+    for (let i = 0; i < layer.count; i++) {
+      // 円内一様分布（半径 0.5 の円）
+      const r = Math.sqrt(Math.random()) * 0.5;
+      const t = Math.random() * Math.PI * 2;
+      const sx = r * Math.cos(t);
+      const sy = r * Math.sin(t);
+      stars.push({
+        x: sx,    // -0.5 .. +0.5
+        y: sy,    // -0.5 .. +0.5
+        layer: layerIndex
+      });
     }
+  });
+}
 
-    window.addEventListener("resize", resizeCanvas, { passive: true });
+/* =========================
+   静止星レイヤー描画
+   ========================= */
+function buildStarLayer() {
+  if (!stars.length || !cssW || !cssH) return;
 
-    /* ---- 星を作る（単純にランダム） ---- */
-    function buildStarLayer() {
-      if (!cssW || !cssH) return;
+  const size = Math.min(cssW, cssH);
 
-      const w = cssW;
-      const h = cssH;
-      const cx = w / 2;
-      const cy = h / 2;
-      const rx = w / 2;
-      const ry = h / 2;
+  starLayer = document.createElement('canvas');
+  starLayer.width  = size;
+  starLayer.height = size;
+  const ox = starLayer.getContext('2d');
 
-      starLayer = document.createElement("canvas");
-      starLayer.width  = w;
-      starLayer.height = h;
-      const ox = starLayer.getContext("2d");
+  // 背景黒
+  ox.fillStyle = '#000000';
+  ox.fillRect(0, 0, size, size);
 
-      // 背景（楕円内だけ黒）
-      ox.fillStyle = "#000000";
-      ox.fillRect(0, 0, w, h);
+  ox.fillStyle    = STAR_COLOR;
+  ox.textAlign    = 'center';
+  ox.textBaseline = 'middle';
 
-      ox.save();
-      ox.beginPath();
-      ox.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
-      ox.clip();
+  // ベースサイズ（画面サイズに比例）
+  const base = Math.max(2, size / 180); // 調整パラメータ
 
-      ox.fillStyle = STAR_COLOR;
+  for (const s of stars) {
+    const layer = STAR_LAYERS[s.layer];
+    const px = (0.5 + s.x) * size;
+    const py = (0.5 + s.y) * size;
 
-      for (let i = 0; i < STAR_COUNT; i++) {
-        // 楕円内一様乱数
-        let x, y;
-        while (true) {
-          x = Math.random() * w;
-          y = Math.random() * h;
-          const dx = (x - cx) / rx;
-          const dy = (y - cy) / ry;
-          if (dx * dx + dy * dy <= 1) break;
-        }
-        const r = 0.7 + Math.random() * 1.3;  // ちょっとだけサイズ差
-        ox.beginPath();
-        ox.arc(x, y, r, 0, Math.PI * 2);
-        ox.fill();
-      }
+    const fontSize = base * layer.sizeMul;
+    ox.font = `${fontSize}px serif`;
+    ox.fillText(STAR_CHAR, px, py);
+  }
+}
 
-      ox.restore();
+/* =========================
+   流れ星ロジック
+   - 初回訪問：必ず1本
+   - 2回目以降：挑戦回数に応じて指数関数的に確率UP
+   ========================= */
+const METEOR_KEY = 'vm_o_meteor_attempts';
+const meteors = [];
+
+function registerVisitAndMaybeSpawnMeteor() {
+  let attempts = 0;
+  try {
+    const raw = localStorage.getItem(METEOR_KEY);
+    attempts = raw ? (parseInt(raw, 10) || 0) : 0;
+  } catch (e) {
+    attempts = 0;
+  }
+  attempts++;
+  try {
+    localStorage.setItem(METEOR_KEY, String(attempts));
+  } catch (e) {
+    // プライベートモードなどでは無視
+  }
+
+  if (attempts === 1) {
+    // 初回は必ず1本
+    spawnMeteor();
+  } else {
+    // P = 1 - exp(-k * attempts) で指数的に上昇
+    const k = 0.12; // 調整可能
+    const p = 1 - Math.exp(-k * attempts);
+    if (Math.random() < p) {
+      spawnMeteor();
     }
+  }
+}
 
-    function paintStatic() {
-      if (!cssW || !cssH || !starLayer) return;
-      ctx.clearRect(0, 0, cssW, cssH);
-      ctx.drawImage(starLayer, 0, 0, cssW, cssH);
+function spawnMeteor() {
+  if (!cssW || !cssH) return;
+
+  const size = Math.min(cssW, cssH);
+
+  // 画面内ランダム位置からランダムな方向へ
+  const angle = Math.random() * Math.PI * 2;
+  const length = (0.25 + Math.random() * 0.35) * size;
+  const speed  = length / (0.7 + Math.random() * 0.6); // px/s
+  const life   = length / speed;
+
+  const x0 = Math.random() * cssW;
+  const y0 = Math.random() * cssH;
+  const vx = Math.cos(angle) * speed;
+  const vy = Math.sin(angle) * speed;
+
+  meteors.push({
+    x: x0,
+    y: y0,
+    vx,
+    vy,
+    life,
+    age: 0
+  });
+}
+
+function updateMeteors(dt) {
+  for (let i = meteors.length - 1; i >= 0; i--) {
+    const m = meteors[i];
+    m.age += dt;
+    m.x   += m.vx * dt;
+    m.y   += m.vy * dt;
+
+    if (m.age >= m.life ||
+        m.x < -50 || m.y < -50 ||
+        m.x > cssW + 50 || m.y > cssH + 50) {
+      meteors.splice(i, 1);
     }
+  }
+}
 
-    /* ---- 流れ星 ---- */
-    function spawnMeteor() {
-      if (!cssW || !cssH) return;
+function drawFrame() {
+  if (!cssW || !cssH) return;
 
-      const w = cssW;
-      const h = cssH;
-      const size = Math.min(w, h);
+  // 円＝container は正方形なので、星レイヤーも正方形にフィットさせる
+  const size = Math.min(cssW, cssH);
+  ctx.clearRect(0, 0, cssW, cssH);
 
-      const angle = Math.random() * Math.PI * 2;
-      const length = (0.35 + Math.random() * 0.4) * size;
-      const duration = 0.8 + Math.random() * 0.6;   // 飛ぶ時間 [秒]
-      const speed = length / duration;
+  if (starLayer) {
+    // starLayer は size×size なので、左上に貼る
+    ctx.drawImage(starLayer, 0, 0, size, size);
+  }
 
-      const cx = w / 2;
-      const cy = h / 2;
-      const rx = w / 2;
-      const ry = h / 2;
+  if (!meteors.length) return;
 
-      // 楕円の中に入るよう、中心付近からスタート
-      let x0, y0;
-      while (true) {
-        x0 = cx + (Math.random() * 0.6 - 0.3) * w;
-        y0 = cy + (Math.random() * 0.6 - 0.3) * h;
-        const dx = (x0 - cx) / rx;
-        const dy = (y0 - cy) / ry;
-        if (dx * dx + dy * dy <= 1) break;
-      }
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  for (const m of meteors) {
+    const alpha = Math.max(0, 1 - m.age / m.life);
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = '#7F7F7F';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.moveTo(m.x - m.vx * 0.07, m.y - m.vy * 0.07);
+    ctx.lineTo(m.x, m.y);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
 
-      meteor = {
-        x: x0,
-        y: y0,
-        vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed,
-        life: duration,
-        age: 0
-      };
+/* =========================
+   アニメーションループ
+   ========================= */
+let lastTime = null;
+function loop(timestamp) {
+  if (lastTime == null) lastTime = timestamp;
+  const dt = (timestamp - lastTime) / 1000;
+  lastTime = timestamp;
 
-      if (animId == null) {
-        lastTime = performance.now();
-        animId = requestAnimationFrame(step);
-      }
-    }
+  updateMeteors(dt);
+  drawFrame();
 
-    function step(t) {
-      const dt = (t - lastTime) / 1000;
-      lastTime = t;
+  requestAnimationFrame(loop);
+}
 
-      if (meteor) {
-        meteor.age += dt;
-        meteor.x += meteor.vx * dt;
-        meteor.y += meteor.vy * dt;
+/* =========================
+   起動
+   ========================= */
+function start() {
+  resizeCanvas();
+  registerVisitAndMaybeSpawnMeteor();
+  requestAnimationFrame(loop);
+}
 
-        if (meteor.age >= meteor.life) {
-          meteor = null;
-        }
-      }
-
-      paintStatic();
-
-      if (meteor) {
-        ctx.save();
-        ctx.globalCompositeOperation = "lighter";
-        const alpha = Math.max(0, 1 - meteor.age / meteor.life);
-        ctx.globalAlpha = alpha;
-        ctx.strokeStyle = "#FFFFFF";
-        ctx.lineWidth = 1.4;
-
-        ctx.beginPath();
-        ctx.moveTo(
-          meteor.x - meteor.vx * 0.10,
-          meteor.y - meteor.vy * 0.10
-        );
-        ctx.lineTo(meteor.x, meteor.y);
-        ctx.stroke();
-        ctx.restore();
-
-        animId = requestAnimationFrame(step);
-      } else {
-        // 終了したらアニメーションを止める（省エネ）
-        animId = null;
-      }
-    }
-
-    /* ---- 流れ星の出現確率（試行ごとに指数関数的に上昇） ---- */
-    function shouldSpawnMeteorThisVisit() {
-      let attempts = Number(localStorage.getItem(STORAGE_KEY) || "0");
-      attempts += 1;
-      localStorage.setItem(STORAGE_KEY, String(attempts));
-
-      if (attempts === 1) {
-        // 初回は必ず流れ星
-        return true;
-      }
-
-      const base   = 0.0005;  // 初回付近の確率（0.05%）
-      const growth = 1.4;     // 乗数。ここを変えると上がり方が変わる
-      const maxP   = 0.8;     // 上限 80%
-
-      const p = Math.min(maxP, base * Math.pow(growth, attempts - 1));
-      // console.log(`attempt #${attempts}, p=${p}`);
-      return Math.random() < p;
-    }
-
-    /* ---- 初期化 ---- */
-    function init() {
-      resizeCanvas();
-      if (shouldSpawnMeteorThisVisit()) {
-        spawnMeteor();
-      } else {
-        paintStatic();
-      }
-    }
-
-    window.addEventListener("load", init);
-  </script>
+start();
+</script>
 </body>
 </html>
